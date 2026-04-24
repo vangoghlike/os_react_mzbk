@@ -1,0 +1,34 @@
+.toggle {
+  min-width: 76px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 8px 4px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle.is-checked {
+  background: rgba(39, 139, 255, 0.2);
+}
+
+.toggle__thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f2f4f7;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggle.is-checked .toggle__thumb {
+  transform: translateX(24px);
+  background: white;
+}
+
+.toggle__label {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--text-main);
+}

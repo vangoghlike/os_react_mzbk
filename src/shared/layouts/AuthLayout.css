@@ -1,0 +1,17 @@
+.auth-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 42px;
+  background:
+    radial-gradient(circle at 68% 96%, rgba(57, 187, 255, 0.24), transparent 22%),
+    radial-gradient(circle at 22% 32%, rgba(255, 255, 255, 0.03), transparent 20%),
+    linear-gradient(140deg, #25262e 0%, #202128 45%, #20262f 100%);
+}
+
+@media (max-width: 720px) {
+  .auth-layout {
+    padding: 18px;
+  }
+}
