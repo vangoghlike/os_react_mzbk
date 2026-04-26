@@ -1,3 +1,130 @@
+.chart-box {
+  width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.chart-box--scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
+  scrollbar-color: rgba(150, 160, 182, 0.64) rgba(255, 255, 255, 0.05);
+  scrollbar-width: thin;
+}
+
+.chart-box--scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.chart-box--scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chart-box--scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(150, 160, 182, 0.72);
+}
+
 .chart {
   min-width: 0;
+}
+
+.chart__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.chart__loading-text {
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 0.02em;
+}
+
+.chart__loading-dots {
+  display: inline-flex;
+  width: 1.25em;
+  margin-left: 2px;
+}
+
+.chart__loading-dots span {
+  animation: chart-loading-dot 1.2s steps(1, end) infinite;
+}
+
+.chart__loading-dots span:nth-child(2) {
+  animation-name: chart-loading-dot-second;
+}
+
+.chart__loading-dots span:nth-child(3) {
+  animation-name: chart-loading-dot-third;
+}
+
+.chart__loading-bar {
+  position: relative;
+  width: min(180px, 42%);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chart__loading-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 44%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+  animation: chart-loading-bar 1.05s ease-in-out infinite;
+}
+
+@keyframes chart-loading-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes chart-loading-dot-second {
+  0%,
+  32% {
+    opacity: 0;
+  }
+
+  33%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes chart-loading-dot-third {
+  0%,
+  65% {
+    opacity: 0;
+  }
+
+  66%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes chart-loading-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(240%);
+  }
 }

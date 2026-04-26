@@ -1,4 +1,6 @@
 .card {
+  min-width: 0;
+  overflow: hidden;
   border-radius: var(--radius-lg);
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
@@ -24,18 +26,19 @@
 }
 
 .card__body {
+  min-width: 0;
   padding: 24px;
 }
 
 .card__title {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
 .card__subtitle {
   margin-top: 6px;
   color: var(--text-muted);
-  font-size: 0.9375rem;
+  font-size: 1rem;
 }
 
 @media (max-width: 920px) {

@@ -1,84 +1,71 @@
 import { useState } from 'react';
-import { commonIconSources } from '../../../../shared/assets/icons/commonIconSources';
-import { ActionButton } from '../../../../shared/ui/ActionButton';
-import { BasicTable } from '../../../../shared/ui/BasicTable';
-import { PageCard } from '../../../../shared/ui/PageCard';
+import { CollapsibleContent } from '../../../../shared/ui/CollapsibleContent';
+import { DataTableCard } from '../../../../shared/ui/DataTableCard';
+import { DetailToggleBar } from '../../../../shared/ui/DetailToggleBar';
+import { EquipmentSelect } from '../../../../shared/ui/EquipmentSelect';
+import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
 import {
-  baseGenerationInverterHeaderRows,
-  baseGenerationPowerHeaderRows
-} from '../mock/baseGenerationSummaryMock';
-import {
-  baseGenerationInverterTableRows,
-  baseGenerationPowerTableRows
+  baseGenerationInverterTableMock,
+  baseGenerationPowerTableMock
 } from '../mock/baseGenerationTableMock';
-import './BaseGenerationTableSection.css';
+import '../styles/BaseGenerationTableSection.css';
 
+/*
+ * 필요: 운전 상세 표, 인버터 상세 접기/펼치기, 장비 선택, 엑셀 버튼을 배치한다.
+ * 연결: DataTableCard, DetailToggleBar, EquipmentSelect, ExcelSaveButton, baseGeneration mock.
+ * 설명: 표 구조와 엑셀 액션은 공통 카드가 맡고, 접힘/장비 선택만 화면 상태로 둔다.
+ * 수정: 표 폭과 패널 간격은 styles/BaseGenerationTableSection.css에서 조정한다.
+ */
 export function BaseGenerationTableSection() {
   // 하단 상세 표를 분리해 요약 차트 수정과 충돌하지 않게 둔다.
-  const [inverterExpanded, setInverterExpanded] = useState(true);
+  const [inverterExpanded, setInverterExpanded] = useState(baseGenerationInverterTableMock.defaultExpanded);
+  const [selectedInverter, setSelectedInverter] = useState(baseGenerationInverterTableMock.defaultEquipmentValue);
 
   return (
     <div className="base-generation-table-section">
-      <PageCard
-        title="운전 상세 현황"
-        className="base-generation-table-section__panel"
-        actions={
-          <ActionButton variant="success" className="base-generation-table-section__excel-button">
-            <img
-              src={commonIconSources.excelSave.src}
-              alt={commonIconSources.excelSave.alt}
-              className="base-generation-table-section__button-icon"
-            />
-            <span>전체엑셀 저장</span>
-          </ActionButton>
-        }
-      >
-        <BasicTable
-          ariaLabel="기저발전 운전 상세 현황"
-          headerRows={baseGenerationPowerHeaderRows}
-          rows={baseGenerationPowerTableRows}
-          className="base-generation-table-section__table"
-        />
-      </PageCard>
+      <DataTableCard
+        title=""
+        ariaLabel={baseGenerationPowerTableMock.ariaLabel}
+        headerRows={baseGenerationPowerTableMock.headerRows}
+        rows={baseGenerationPowerTableMock.rows}
+        minWidth={baseGenerationPowerTableMock.minWidth}
+        excel={{ fileName: '기저발전_운전상세현황', sheetName: '운전 상세 현황' }}
+      />
 
-      <button
-        type="button"
-        className={`base-generation-table-section__toggle ${inverterExpanded ? 'is-open' : ''}`.trim()}
-        aria-expanded={inverterExpanded}
+      <DetailToggleBar
+        label="인버터 상세 내역 보기"
+        expanded={inverterExpanded}
         onClick={() => setInverterExpanded((current) => !current)}
-      >
-        <span>인버터 상세 내역 보기</span>
-        <span className="base-generation-table-section__toggle-caret">{inverterExpanded ? '▾' : '▸'}</span>
-      </button>
+      />
 
-      {inverterExpanded && (
-        <PageCard
-          title=""
-          className="base-generation-table-section__panel"
+      <CollapsibleContent open={inverterExpanded}>
+        <DataTableCard
+          ariaLabel={baseGenerationInverterTableMock.ariaLabel}
+          headerRows={baseGenerationInverterTableMock.headerRows}
+          rows={baseGenerationInverterTableMock.rows}
+          minWidth={baseGenerationInverterTableMock.minWidth}
           actions={
             <div className="inline-actions">
-              <ActionButton variant="outline" className="base-generation-table-section__outline-button">
-                Inverter #1
-              </ActionButton>
-              <ActionButton variant="success" className="base-generation-table-section__excel-button">
-                <img
-                  src={commonIconSources.excelSave.src}
-                  alt={commonIconSources.excelSave.alt}
-                  className="base-generation-table-section__button-icon"
-                />
-                <span>전체엑셀 저장</span>
-              </ActionButton>
+              <EquipmentSelect
+                aria-label="기저발전 인버터 선택"
+                value={selectedInverter}
+                onChange={(event) => setSelectedInverter(event.target.value)}
+                options={baseGenerationInverterTableMock.equipmentOptions}
+              />
+              <ExcelSaveButton
+                fileName={`기저발전_${selectedInverter}_상세내역`}
+                sheets={[
+                  {
+                    name: '인버터 상세 내역',
+                    headerRows: baseGenerationInverterTableMock.headerRows,
+                    rows: baseGenerationInverterTableMock.rows
+                  }
+                ]}
+              />
             </div>
           }
-        >
-          <BasicTable
-            ariaLabel="기저발전 인버터 상세 내역"
-            headerRows={baseGenerationInverterHeaderRows}
-            rows={baseGenerationInverterTableRows}
-            className="base-generation-table-section__table base-generation-table-section__table--wide"
-          />
-        </PageCard>
-      )}
+        />
+      </CollapsibleContent>
     </div>
   );
 }

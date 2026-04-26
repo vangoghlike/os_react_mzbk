@@ -1,0 +1,67 @@
+.chart-summary-panel .card__body {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 96px;
+  padding: 29px 37px 60px 32px;
+}
+
+.chart-summary-panel__top {
+  display: grid;
+  grid-template-columns: minmax(260px, 435px) minmax(620px, 1fr);
+  align-items: start;
+  gap: 46px;
+}
+
+.chart-summary-panel__donut {
+  min-width: 0;
+}
+
+.chart-summary-panel__donut h3 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.chart-summary-panel__matrix {
+  align-self: start;
+}
+
+.chart-summary-panel__trend {
+  position: relative;
+  min-width: 0;
+}
+
+.chart-summary-panel__axis-title {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  z-index: 2;
+  display: inline-flex;
+  flex-direction: column;
+  color: #d6ddea;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.15;
+  white-space: normal;
+  pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+  .chart-summary-panel__top {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 920px) {
+  .chart-summary-panel .card__body {
+    gap: 20px;
+    padding: 18px 14px 22px;
+  }
+
+  .chart-summary-panel__axis-title {
+    font-size: 13px;
+  }
+}

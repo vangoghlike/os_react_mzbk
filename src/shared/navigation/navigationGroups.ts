@@ -23,6 +23,12 @@ export const navigationGroups: NavigationGroup[] = [
     iconAlt: commonIconSources.operationStatus.alt,
     items: [
       {
+        label: '발전소 운영현황',
+        path: '/dashboard/plant-operation-status',
+        iconSrc: commonIconSources.plantOperation.src,
+        iconAlt: commonIconSources.plantOperation.alt
+      },
+      {
         label: '기저발전',
         path: '/dashboard/base-generation',
         iconSrc: commonIconSources.baseGeneration.src,
@@ -39,6 +45,44 @@ export const navigationGroups: NavigationGroup[] = [
         path: '/dashboard/charge-discharge',
         iconSrc: commonIconSources.chargeDischarge.src,
         iconAlt: commonIconSources.chargeDischarge.alt
+      },
+      {
+        label: '전력 소비 현황',
+        path: '/dashboard/power-consumption-status',
+        iconSrc: commonIconSources.powerConsumption.src,
+        iconAlt: commonIconSources.powerConsumption.alt
+      }
+    ]
+  },
+  {
+    key: 'operation-history',
+    label: '운영 이력',
+    iconSrc: commonIconSources.operationHistory.src,
+    iconAlt: commonIconSources.operationHistory.alt,
+    items: [
+      {
+        label: 'GRID 기저발전 이력',
+        path: '/history/grid-base-generation-history',
+        iconSrc: commonIconSources.gridHistory.src,
+        iconAlt: commonIconSources.gridHistory.alt
+      },
+      {
+        label: '보조발전 이력',
+        path: '/history/support-generation-history',
+        iconSrc: commonIconSources.supportHistory.src,
+        iconAlt: commonIconSources.supportHistory.alt
+      },
+      {
+        label: 'PCS 충방전 이력',
+        path: '/history/pcs-charge-discharge-history',
+        iconSrc: commonIconSources.pcsHistory.src,
+        iconAlt: commonIconSources.pcsHistory.alt
+      },
+      {
+        label: '전력소비 이력',
+        path: '/history/power-consumption-history',
+        iconSrc: commonIconSources.powerHistory.src,
+        iconAlt: commonIconSources.powerHistory.alt
       }
     ]
   },

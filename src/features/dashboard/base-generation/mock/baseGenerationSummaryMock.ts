@@ -1,6 +1,11 @@
-import type { BasicTableHeaderCell } from '../../../../shared/ui/BasicTable';
-import type { BaseGenerationSummaryMetric } from '../types/baseGeneration';
+import type { BaseGenerationChartDatum, BaseGenerationSummaryMetric } from '../types/baseGeneration';
 
+/*
+ * 필요: 기저발전 상단 요약 표와 도넛 차트 데이터.
+ * 연결: BaseGenerationSummarySection, SummaryMatrix.
+ * 설명: 보조발전 summary mock과 같은 구조로 컬럼, 지표, 도넛, 범례를 한곳에서 관리한다.
+ * 수정: 요약 컬럼, 비중, 발전량, 범례명은 이 파일에서 조정한다.
+ */
 export const baseGenerationSummaryColumns = ['Total', 'IVT1', 'IVT2', 'IVT3', 'IVT4', 'IVT5', 'IVT6', 'IVT7'];
 
 export const baseGenerationSummaryMetrics: BaseGenerationSummaryMetric[] = [
@@ -8,59 +13,9 @@ export const baseGenerationSummaryMetrics: BaseGenerationSummaryMetric[] = [
   { label: '발전량(kWh)', values: ['8,420', '1,140', '1,180', '1,176', '1,165', '1,181', '1,276', '1,302'] }
 ];
 
-export const baseGenerationSummaryLegendLabels = ['그래프 명1', '그래프 명2', '그래프 명3'];
+export const baseGenerationSummaryLegendLabels = ['그래프 명1', '그래프 명2'];
 
-export const baseGenerationPowerHeaderRows: BasicTableHeaderCell[][] = [
-  [
-    { label: 'TIME', rowSpan: 2 },
-    { label: 'POWER', colSpan: 4 },
-    { label: 'ACTIVE.ACCM', colSpan: 4 },
-    { label: 'REACTIVE.ACCM', colSpan: 4 }
-  ],
-  [
-    { label: 'ACTIV' },
-    { label: 'REACTIVE' },
-    { label: 'APPARENT' },
-    { label: 'PF' },
-    { label: 'DAY' },
-    { label: 'WEEK' },
-    { label: 'MON' },
-    { label: 'TOT' },
-    { label: 'DAY' },
-    { label: 'WEEK' },
-    { label: 'MON' },
-    { label: 'TOT' }
-  ]
-];
-
-export const baseGenerationInverterHeaderRows: BasicTableHeaderCell[][] = [
-  [
-    { label: 'TIME', rowSpan: 2 },
-    { label: 'V', colSpan: 3 },
-    { label: 'A', colSpan: 3 },
-    { label: 'FR', colSpan: 3 },
-    { label: 'ACTIVE POWER', colSpan: 3 },
-    { label: 'REACTIVE POWER', colSpan: 3 },
-    { label: 'APPARENT POWER', colSpan: 3 }
-  ],
-  [
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' },
-    { label: 'L1.2' }
-  ]
+export const baseGenerationDistributionChartMock: BaseGenerationChartDatum[] = [
+  { value: 34, name: '그래프 명1' },
+  { value: 66, name: '그래프 명2' }
 ];

@@ -1,0 +1,33 @@
+.metric-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 14px;
+  width: min(100%, 1040px);
+}
+
+.metric-tabs__item {
+  min-height: 58px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(31, 31, 50, 0.9);
+  color: #d6d9e4;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.metric-tabs__item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(55, 175, 255, 0.35);
+}
+
+.metric-tabs__item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(55, 175, 255, 0.14);
+}
+
+.metric-tabs__item.is-active {
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+  color: #fff;
+  border-color: transparent;
+}

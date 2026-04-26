@@ -6,6 +6,12 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: 'sm' | 'md' | 'lg';
 };
 
+/*
+ * 필요: 조회, 로그인, 엑셀 저장 등 반복 버튼의 variant와 size 기준을 맞춘다.
+ * 연결: LoginForm, HistorySearchBar, ExcelSaveButton.
+ * 설명: 기능별 동작은 호출부가 넘기고 이 컴포넌트는 버튼 클래스만 정리한다.
+ * 수정: 버튼 색상과 크기 기준은 ActionButton.css에서 조정한다.
+ */
 export function ActionButton({
   variant = 'outline',
   size = 'md',

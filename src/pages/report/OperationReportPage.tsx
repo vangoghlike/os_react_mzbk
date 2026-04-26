@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { EChartsOption } from 'echarts';
 import { ActionButton } from '../../shared/ui/ActionButton';
-import { DateRangeBar } from '../../shared/ui/DateRangeBar';
+import { DateRangeBar, type DateRangeSearchCriteria } from '../../shared/ui/DateRangeBar';
+import { ExcelSaveButton } from '../../shared/ui/ExcelSaveButton';
 import { PageCard } from '../../shared/ui/PageCard';
 import { PageHeading } from '../../shared/ui/PageHeading';
 import { SegmentedTabs } from '../../shared/ui/SegmentedTabs';
@@ -13,6 +14,17 @@ type ReportTab = (typeof reportTabs)[number];
 
 export function OperationReportPage() {
   const [tab, setTab] = useState<ReportTab>('Daily');
+  const [searchCriteria, setSearchCriteria] = useState<DateRangeSearchCriteria>({
+    startDate: '2026-01-01',
+    endDate: '2026-01-08',
+    mode: 'Month'
+  });
+  const [searchedAt, setSearchedAt] = useState('초기 mock 데이터');
+
+  const handleSearch = (nextCriteria: DateRangeSearchCriteria) => {
+    setSearchCriteria(nextCriteria);
+    setSearchedAt(new Date().toLocaleTimeString('ko-KR', { hour12: false }));
+  };
 
   const option = useMemo<EChartsOption>(
     () => ({
@@ -63,8 +75,18 @@ export function OperationReportPage() {
         title="운영 리포트"
         actions={
           <div className="inline-actions">
-            <ActionButton variant="outline">Print</ActionButton>
-            <ActionButton variant="success">Excel Download</ActionButton>
+            <ActionButton variant="outline" onClick={() => window.print()}>Print</ActionButton>
+            <ExcelSaveButton
+              label="Excel Download"
+              fileName={`운영리포트_${tab}_${searchCriteria.mode}`}
+              sheets={[
+                {
+                  name: 'Detail Data',
+                  headers: ['DATE', 'TOTAL kWh', 'IVT kWh', 'PF AVG', 'V AVG', 'A AVG', 'FR AVG'],
+                  rows: reportTableRows
+                }
+              ]}
+            />
           </div>
         }
       />
@@ -72,7 +94,15 @@ export function OperationReportPage() {
       <PageCard className="card--tight">
         <SegmentedTabs value={tab} options={reportTabs} onChange={setTab} />
         <div className="gap-16" />
-        <DateRangeBar />
+        <DateRangeBar
+          defaultStartDate={searchCriteria.startDate}
+          defaultEndDate={searchCriteria.endDate}
+          defaultMode={searchCriteria.mode}
+          onSearch={handleSearch}
+        />
+        <div className="history-query-status" aria-live="polite">
+          조회 조건: {searchCriteria.mode} / {searchCriteria.startDate || '-'} ~ {searchCriteria.endDate || '-'} / 조회 시각: {searchedAt}
+        </div>
       </PageCard>
 
       <PageCard title={`${tab} Operation Report`} subtitle="Summary / Moving Graph / Detail Data">

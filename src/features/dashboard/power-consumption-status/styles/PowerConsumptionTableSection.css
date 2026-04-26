@@ -1,0 +1,10 @@
+.power-consumption-table-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.power-consumption-table-section__panel .card__header {
+  padding-top: 12px;
+  padding-bottom: 6px;
+}

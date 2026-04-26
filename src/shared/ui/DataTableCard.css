@@ -1,0 +1,33 @@
+.data-table-card .card__header {
+  align-items: flex-start;
+  padding: 37px 48px 0 48px;
+}
+
+.data-table-card .card__title {
+  color: var(--text-white);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.data-table-card .card__actions {
+  margin-left: auto;
+}
+
+.data-table-card .card__body {
+  padding: 43px 27px 64px;
+}
+
+.data-table-card .table-wrap {
+  background: var(--table-cell-bg);
+}
+
+@media (max-width: 720px) {
+  .data-table-card .card__header {
+    padding: 20px 20px 0;
+  }
+
+  .data-table-card .card__body {
+    padding: 18px 14px 22px;
+  }
+}
