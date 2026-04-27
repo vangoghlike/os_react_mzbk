@@ -12,6 +12,12 @@ npm run build
 npm run preview
 ```
 
+## 외부 공유 배포
+- Git 연결 없이 외부 확인용 URL만 빠르게 만들 때는 Netlify 수동 배포를 사용한다.
+- Vite 빌드 결과물인 `dist` 폴더를 Netlify에 업로드하면 된다.
+- `npm run build`에는 Netlify SPA 새로고침 대응용 `_redirects` 준비가 포함되어 있다.
+- 자세한 절차는 `DEPLOY_NETLIFY.md` 문서를 따른다.
+
 ## 목적
 - EMS 화면 퍼블리싱 납품용 React 프로젝트
 - 백엔드 분리 구조

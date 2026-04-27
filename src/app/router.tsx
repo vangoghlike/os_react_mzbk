@@ -60,7 +60,7 @@ const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then((module) =>
 function AuthOutlet() {
   const { isAuthenticated } = useAuthSession();
   const location = useLocation();
-  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard/plant-operation-status';
+  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard/base-generation';
 
   if (isAuthenticated) {
     return <Navigate to={fromPath} replace />;
@@ -100,7 +100,7 @@ export function AppRouter() {
       </Route>
 
       <Route element={<DashboardOutlet />}>
-        <Route path="/" element={<Navigate to="/dashboard/plant-operation-status" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard/base-generation" replace />} />
         <Route path="/dashboard/plant-operation-status" element={<PlantOperationStatusPage />} />
         <Route path="/dashboard/base-generation" element={<BaseGenerationPage />} />
         <Route path="/dashboard/support-generation" element={<SupportGenerationStatusPage />} />
