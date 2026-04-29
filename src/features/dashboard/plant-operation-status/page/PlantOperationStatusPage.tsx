@@ -9,7 +9,7 @@ import { PlantOperationDiagramSection } from '../sections/PlantOperationDiagramS
  */
 export function PlantOperationStatusPage() {
   return (
-    <div className="page-stack">
+    <div className="page-stack plant-operation-page">
       <PageHeading title="발전소 운영현황" />
       <PlantOperationDiagramSection />
     </div>
