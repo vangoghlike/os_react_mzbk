@@ -19,7 +19,7 @@ export function PcsChargeDischargeSummarySection() {
       donutTitle="그래프 제목"
       donutData={pcsChargeDischargeDistributionMock}
       donutLegendLabels={pcsChargeDischargeSummaryLegendLabels}
-      donutColors={['#25b6fe', '#cdced2']}
+      donutColors={['#25b6fe', '#d20000']}
       summaryAriaLabel="PCS 충방전 요약"
       summaryColumns={pcsChargeDischargeSummaryColumns}
       summaryMetrics={pcsChargeDischargeSummaryMetrics}

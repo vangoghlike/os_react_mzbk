@@ -41,9 +41,9 @@ export type PlantOperationTopologyPlacements = {
  * 수정: 칸 단위, 위치, 선 분배 기준은 이 파일에서만 조정한다.
  */
 export const plantOperationCanvasLayout: PlantOperationCanvasLayout = {
-  columnWidth: 18,
+  columnWidth: 20,
   columnGap: 0,
-  rowHeight: 18,
+  rowHeight: 20,
   rowGap: 0
 };
 
