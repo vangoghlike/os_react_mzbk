@@ -72,9 +72,9 @@ function getHeaderRenderRows(headerRows?: TableHeaderCell[][], headers?: string[
 
 /*
  * 필요: 여러 화면의 일반 표와 다중 헤더 표를 같은 구조로 렌더링한다.
- * 연결: shared/types/table, feature별 table mock.
+ * 연결: shared/types/table, feature별 API table view model.
  * 설명: headerRows가 있으면 병합 헤더를 쓰고, 없으면 단일 headers 배열을 쓴다.
- * 수정: 표 최소 폭은 호출부 mock의 minWidth로 조정하고 시각 스타일은 BasicTable.css에서 조정한다.
+ * 수정: 표 최소 폭은 호출부 minWidth로 조정하고 시각 스타일은 BasicTable.css에서 조정한다.
  */
 export function BasicTable({ headers, headerRows, rows, ariaLabel, minWidth, className = '' }: BasicTableProps) {
   // 넓은 설비 표는 화면별 minWidth만 넘기고 공통 래퍼에서 가로 스크롤을 맡는다.

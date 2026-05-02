@@ -9,9 +9,9 @@ type MetricTabsProps<T extends string> = {
 
 /*
  * 필요: Max/Min/AVG 같은 이력 지표 탭을 공통으로 렌더링한다.
- * 연결: history feature의 metricTabs mock과 result section state.
+ * 연결: history feature의 지표 constants와 result section state.
  * 설명: 화면별 탭 목록만 props로 받고 화면명을 variant로 만들지 않는다.
- * 수정: 탭 라벨은 feature mock, 탭 모양은 MetricTabs.css에서 조정한다.
+ * 수정: 탭 라벨은 feature constants, 탭 모양은 MetricTabs.css에서 조정한다.
  */
 export function MetricTabs<T extends string>({ value, options, onChange, ariaLabel }: MetricTabsProps<T>) {
   return (

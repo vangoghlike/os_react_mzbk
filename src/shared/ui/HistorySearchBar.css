@@ -2,14 +2,14 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 16px;
+  gap: 20px;
   width: 100%;
 }
 
 .history-search-bar__modes {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
   margin-right: auto;
 }
 
@@ -19,13 +19,13 @@
   gap: 10px;
   color: #8f96a7;
   font-size: 0.9375rem;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .history-search-bar__check {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
   display: inline-grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.06);
@@ -41,26 +41,56 @@
   background: var(--accent-blue);
 }
 
+.history-search-bar__date {
+  position: relative;
+  display: block;
+}
+
 .history-search-bar__date input {
   width: 220px;
   height: 56px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(12, 13, 22, 0.6);
+  border-radius: 5px;
+  border: 1px solid var(--text-header-muted);
+  background: rgba(12, 13, 22, 0.52);
   color: #e8edf8;
-  padding: 0 18px;
+  padding: 0 52px 0 24px;
   font-size: 1rem;
+}
+
+.history-search-bar__date::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-header-muted);
+  border-radius: 4px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.history-search-bar__date::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 8px);
+  right: 26px;
+  z-index: 1;
+  width: 10px;
+  height: 2px;
+  background: var(--text-header-muted);
+  pointer-events: none;
 }
 
 .history-search-bar__dash {
   color: #d9dfec;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .history-search-bar__button {
-  min-width: 160px;
+  min-width: 170px;
   height: 56px;
-  border-radius: 8px;
+  border-radius: 5px;
   font-size: 1rem;
 }
 

@@ -13,8 +13,11 @@ type PageLoadingFallbackProps = {
 export function PageLoadingFallback({ label = '화면을 불러오는 중입니다.' }: PageLoadingFallbackProps) {
   return (
     <div className="page-loading" role="status" aria-live="polite">
-      <span className="page-loading__spinner" aria-hidden="true" />
-      <span>{label}</span>
+      <div className="page-loading__content">
+        <span className="page-loading__spinner" aria-hidden="true" />
+        <span>{label}</span>
+      </div>
+      <span className="page-loading__bar" aria-hidden="true" />
     </div>
   );
 }

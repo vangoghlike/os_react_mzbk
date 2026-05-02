@@ -20,9 +20,9 @@ type HistorySearchBarProps<T extends string> = {
 
 /*
  * 필요: 이력 화면의 Year/Month/Duration 검색 조건 UI를 공통화한다.
- * 연결: history feature filter mock과 PageHeading actions 영역.
- * 설명: 조회 API 없이 선택 상태와 submit 형태만 재현한다.
- * 수정: 모드 목록은 feature mock, 날짜 placeholder와 버튼 모양은 호출부/CSS에서 조정한다.
+ * 연결: history feature 검색 constants와 PageHeading actions 영역.
+ * 설명: 선택 상태와 submit 형태만 관리하고 실제 조회는 호출부 hook에서 처리한다.
+ * 수정: 모드 목록은 feature constants, 날짜 placeholder와 버튼 모양은 호출부/CSS에서 조정한다.
  */
 export function HistorySearchBar<T extends string>({
   modes,
@@ -33,7 +33,7 @@ export function HistorySearchBar<T extends string>({
   defaultEndDate = '',
   onSearch
 }: HistorySearchBarProps<T>) {
-  // 조회 API 없이 선택 상태만 재현해 퍼블리싱 화면의 폼 구조를 확인한다.
+  // 입력값은 이 컴포넌트가 관리하고, 조회 호출은 상위 화면이 담당한다.
   const [selectedMode, setSelectedMode] = useState<T>(defaultMode);
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);

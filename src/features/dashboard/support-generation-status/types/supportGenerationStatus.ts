@@ -1,10 +1,10 @@
 import type { TableHeaderCell, TableRow } from '../../../../shared/types/table';
 
 /*
- * 필요: 보조 발전현황 요약, 차트, 상세 표 mock 계약.
- * 연결: supportGeneration mock 파일들과 section 컴포넌트.
- * 설명: API 응답이 생기면 이 타입 모양에 맞춘 view model로 교체한다.
- * 수정: 컬럼/series/장비 옵션 구조가 바뀔 때 이 파일을 수정한다.
+ * 필요: 보조 발전현황 API 응답을 화면 컴포넌트가 쓰는 view model로 고정한다.
+ * 연결: supportGenerationStatusAdapter, SupportGenerationSummarySection, SupportGenerationDetailTableSection.
+ * 설명: 컴포넌트는 API 필드명을 모르고 이 타입의 요약/차트/표 데이터만 받는다.
+ * 수정: API 필드가 바뀌면 adapter를 먼저 수정하고, 화면 구조 변경 시 이 타입을 조정한다.
  */
 export type SupportGenerationSummaryMetric = {
   label: string;
@@ -16,14 +16,22 @@ export type SupportGenerationDistributionItem = {
   value: number;
 };
 
-export type SupportGenerationTrendChartMock = {
+export type SupportGenerationTrendChartData = {
   labels: string[];
   totalOutputSeries: number[];
   batteryOutputSeries: number[];
   dieselOutputSeries: number[];
 };
 
-export type SupportGenerationDetailTableMock = {
+export type SupportGenerationSummaryData = {
+  columns: string[];
+  metrics: SupportGenerationSummaryMetric[];
+  donutData: SupportGenerationDistributionItem[];
+  donutLegendLabels: string[];
+  donutColors: string[];
+};
+
+export type SupportGenerationDetailTableData = {
   ariaLabel: string;
   minWidth: number;
   headerRows: TableHeaderCell[][];
@@ -34,4 +42,10 @@ export type SupportGenerationDetailTableMock = {
   }[];
   defaultEquipmentValue: string;
   defaultExpanded: boolean;
+};
+
+export type SupportGenerationPageData = {
+  summary: SupportGenerationSummaryData;
+  trendChart: SupportGenerationTrendChartData;
+  table: SupportGenerationDetailTableData;
 };

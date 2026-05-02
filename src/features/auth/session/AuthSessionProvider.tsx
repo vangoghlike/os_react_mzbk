@@ -1,13 +1,16 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { authUserMock } from './mock/authSessionMock';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { API_AUTH_REQUIRED_EVENT } from '../../../shared/api/apiClient';
+import { authTokenStorage } from '../../../shared/api/authTokenStorage';
+import { authApi, toAuthSessionMenus, toAuthSessionUser } from './api/authApi';
 import type { AuthSession, LoginSessionRequest } from './types/authSession';
 import { authSessionStorage } from './utils/authSessionStorage';
 
 type AuthSessionContextValue = {
   session: AuthSession | null;
   isAuthenticated: boolean;
-  login: (request: LoginSessionRequest) => void;
-  logout: () => void;
+  isInitializing: boolean;
+  login: (request: LoginSessionRequest) => Promise<AuthSession>;
+  logout: () => Promise<void>;
 };
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
@@ -17,34 +20,128 @@ type AuthSessionProviderProps = {
 };
 
 /*
- * 필요: 로그인 여부를 앱 전체 route와 topbar에서 공유한다.
- * 연결: App, router guard, LoginPage, Topbar.
- * 설명: 실제 인증 토큰 없이 mock 세션을 storage에 저장해 로그인 유지 흐름만 재현한다.
- * 수정: 실제 API 세션으로 교체할 때는 login/logout 내부만 바꾸면 된다.
+ * 필요: 로그인 여부와 실제 API 세션을 앱 전체 route와 topbar에서 공유한다.
+ * 연결: router guard, LoginPage, Topbar, authApi, authTokenStorage.
+ * 설명: 저장된 토큰은 먼저 화면에 반영하고, /me와 /me/menus 재확인은 백그라운드에서 처리한다.
+ * 수정: 인증 흐름이 바뀌면 login/logout/refreshSession만 우선 확인한다.
  */
 export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
   const [session, setSession] = useState<AuthSession | null>(() => authSessionStorage.read());
+  const [isInitializing, setIsInitializing] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function refreshSession() {
+      if (!session) {
+        return;
+      }
+
+      try {
+        const [me, menus] = await Promise.all([authApi.me(), authApi.menus()]);
+        if (!mounted) return;
+
+        const refreshedSession: AuthSession = {
+          ...session,
+          user: toAuthSessionUser(me),
+          menus: toAuthSessionMenus(menus)
+        };
+        authSessionStorage.write(refreshedSession);
+        setSession(refreshedSession);
+      } catch {
+        authSessionStorage.clear();
+        if (mounted) {
+          setSession(null);
+        }
+      } finally {
+        if (mounted) {
+          setIsInitializing(false);
+        }
+      }
+    }
+
+    refreshSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleAuthRequired = () => {
+      authSessionStorage.clear();
+      setSession(null);
+      setIsInitializing(false);
+    };
+
+    window.addEventListener(API_AUTH_REQUIRED_EVENT, handleAuthRequired);
+    return () => {
+      window.removeEventListener(API_AUTH_REQUIRED_EVENT, handleAuthRequired);
+    };
+  }, []);
 
   const value = useMemo<AuthSessionContextValue>(
     () => ({
       session,
       isAuthenticated: Boolean(session),
-      login(request) {
+      isInitializing,
+      async login(request) {
+        const loginResponse = await authApi.login({
+          userId: request.id,
+          password: request.password
+        });
+        authTokenStorage.write({ accessToken: loginResponse.accessToken, tokenType: loginResponse.tokenType }, request.remember);
         const nextSession: AuthSession = {
-          user: authUserMock,
+          user: toAuthSessionUser(loginResponse),
+          menus: [],
+          accessToken: loginResponse.accessToken,
+          tokenType: loginResponse.tokenType,
           remember: request.remember,
           loggedInAt: new Date().toISOString()
         };
 
         authSessionStorage.write(nextSession);
         setSession(nextSession);
+
+        /*
+         * 메뉴는 로그인 화면 이동을 막지 않도록 후속 갱신한다.
+         * 로그인 토큰이 바뀌었거나 로그아웃된 뒤에는 이전 메뉴 응답으로 세션을 덮어쓰지 않는다.
+         */
+        void authApi
+          .menus()
+          .then((menus) => {
+            const sessionWithMenus: AuthSession = {
+              ...nextSession,
+              menus: toAuthSessionMenus(menus)
+            };
+
+            setSession((currentSession) => {
+              if (currentSession?.accessToken !== nextSession.accessToken) {
+                return currentSession;
+              }
+
+              authSessionStorage.write(sessionWithMenus);
+              return sessionWithMenus;
+            });
+          })
+          .catch(() => undefined);
+
+        return nextSession;
       },
-      logout() {
+      async logout() {
+        const logoutRequest = authApi.logout();
+
         authSessionStorage.clear();
         setSession(null);
+
+        try {
+          await logoutRequest;
+        } catch {
+          // 화면 세션은 이미 종료했으므로 서버 로그아웃 실패는 다음 인증 확인에서 정리한다.
+        }
       }
     }),
-    [session]
+    [isInitializing, session]
   );
 
   return <AuthSessionContext.Provider value={value}>{children}</AuthSessionContext.Provider>;

@@ -1,24 +1,22 @@
 import { useState } from 'react';
 import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
-import { pcsChargeDischargeHistoryFilterMock } from '../mock/pcsChargeDischargeHistoryFilterMock';
+import { pcsChargeDischargeHistoryDefaultCriteria } from '../constants/pcsChargeDischargeHistoryConfig';
 import { PcsChargeDischargeHistoryResultSection } from '../sections/PcsChargeDischargeHistoryResultSection';
 import { PcsChargeDischargeHistorySearchSection } from '../sections/PcsChargeDischargeHistorySearchSection';
 import type { PcsChargeDischargeHistoryMode } from '../types/pcsChargeDischargeHistory';
+import '../../shared/HistoryPageLayout.css';
 
 /*
  * 필요: PCS 충방전 이력의 제목, 검색 조건, 결과 영역을 page에서 연결한다.
  * 연결: PageHeading actions, PcsChargeDischargeHistorySearchSection, PcsChargeDischargeHistoryResultSection.
- * 설명: 최종 메뉴명 확정 전에도 route 스캐폴딩이 깨지지 않게 유지한다.
+ * 설명: 검색 조건은 constants에서 받고 결과 영역은 API 이력 데이터를 조회한다.
  * 수정: route 이름 확정 시 app/router.tsx와 navigation을 같이 확인한다.
  */
 export function PcsChargeDischargeHistoryPage() {
-  const [searchCriteria, setSearchCriteria] = useState<HistorySearchCriteria<PcsChargeDischargeHistoryMode>>({
-    mode: pcsChargeDischargeHistoryFilterMock.defaultMode,
-    startDate: pcsChargeDischargeHistoryFilterMock.defaultStartDate,
-    endDate: pcsChargeDischargeHistoryFilterMock.defaultEndDate
-  });
-  const [searchedAt, setSearchedAt] = useState('초기 mock 데이터');
+  const [searchCriteria, setSearchCriteria] =
+    useState<HistorySearchCriteria<PcsChargeDischargeHistoryMode>>(pcsChargeDischargeHistoryDefaultCriteria);
+  const [searchedAt, setSearchedAt] = useState('조회 전');
 
   const handleSearch = (nextCriteria: HistorySearchCriteria<PcsChargeDischargeHistoryMode>) => {
     setSearchCriteria(nextCriteria);
@@ -26,7 +24,7 @@ export function PcsChargeDischargeHistoryPage() {
   };
 
   return (
-    <div className="page-stack">
+    <div className="page-stack history-page">
       <PageHeading title="PCS 충방전 이력" actions={<PcsChargeDischargeHistorySearchSection onSearch={handleSearch} />} />
       <PcsChargeDischargeHistoryResultSection searchCriteria={searchCriteria} searchedAt={searchedAt} />
     </div>

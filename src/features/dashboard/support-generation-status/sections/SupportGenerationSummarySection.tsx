@@ -1,34 +1,33 @@
 import { ChartSummaryPanel } from '../../../../shared/ui/ChartSummaryPanel';
-import {
-  supportGenerationDistributionChartMock,
-  supportGenerationSummaryColumns,
-  supportGenerationSummaryLegendLabels,
-  supportGenerationSummaryMetrics
-} from '../mock/supportGenerationSummaryMock';
-import { supportGenerationTrendChartMock } from '../mock/supportGenerationTrendChartMock';
+import type { SupportGenerationSummaryData, SupportGenerationTrendChartData } from '../types/supportGenerationStatus';
+
+type SupportGenerationSummarySectionProps = {
+  summary: SupportGenerationSummaryData;
+  trendChart: SupportGenerationTrendChartData;
+};
 
 /*
- * 필요: 보조발전 상단 그래프 패널을 공통 ChartSummaryPanel 데이터로 연결한다.
- * 연결: ChartSummaryPanel, supportGeneration summary/trend mock.
- * 설명: 그래프 타입과 개수만 데이터로 넘기고 레이아웃/폰트/범례는 공통 컴포넌트가 담당한다.
- * 수정: 보조발전 값과 series 구성은 mock 파일에서 조정한다.
+ * 필요: 보조 발전현황 상단 그래프 패널을 API view model과 연결한다.
+ * 연결: ChartSummaryPanel, useSupportGenerationStatus.
+ * 설명: 그래프 종류와 series 값만 전달하고, 공통 배치/폰트/범례는 ChartSummaryPanel이 유지한다.
+ * 수정: 보조발전 값과 series 구성은 adapter에서 조정한다.
  */
-export function SupportGenerationSummarySection() {
+export function SupportGenerationSummarySection({ summary, trendChart }: SupportGenerationSummarySectionProps) {
   return (
     <ChartSummaryPanel
-      donutTitle="그래프 제목"
-      donutData={supportGenerationDistributionChartMock}
-      donutLegendLabels={supportGenerationSummaryLegendLabels}
-      donutColors={['#25b6fe', '#396985', '#cdced2']}
+      donutTitle="발전 비중"
+      donutData={summary.donutData}
+      donutLegendLabels={summary.donutLegendLabels}
+      donutColors={summary.donutColors}
       summaryAriaLabel="보조 발전현황 요약"
-      summaryColumns={supportGenerationSummaryColumns}
-      summaryMetrics={supportGenerationSummaryMetrics}
-      chartLabels={supportGenerationTrendChartMock.labels}
+      summaryColumns={summary.columns}
+      summaryMetrics={summary.metrics}
+      chartLabels={trendChart.labels}
       chartYAxisName="Total kWh"
       chartSeries={[
-        { name: '그래프 명1', type: 'bar', data: supportGenerationTrendChartMock.totalOutputSeries },
-        { name: '그래프 명2', type: 'line', data: supportGenerationTrendChartMock.batteryOutputSeries },
-        { name: '그래프 명3', type: 'line', data: supportGenerationTrendChartMock.dieselOutputSeries }
+        { name: '전체 발전량', type: 'bar', data: trendChart.totalOutputSeries },
+        { name: 'ESS 발전량', type: 'line', data: trendChart.batteryOutputSeries, color: '#396985' },
+        { name: '디젤 발전량', type: 'line', data: trendChart.dieselOutputSeries, color: '#cdced2' }
       ]}
     />
   );

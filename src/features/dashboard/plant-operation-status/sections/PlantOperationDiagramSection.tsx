@@ -1,8 +1,8 @@
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { useRef } from 'react';
 import { PageCard } from '../../../../shared/ui/PageCard';
+import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
 import { plantOperationCanvasLayout, plantOperationConnectionRules, plantOperationTopologyPlacements } from '../constants/plantOperationTopologyLayout';
-import { plantOperationStatusMock } from '../mock/plantOperationStatusMock';
 import type {
   PlantOperationAuxiliaryTable,
   PlantOperationBankStatus,
@@ -24,6 +24,12 @@ import '../styles/PlantOperationDiagramSection.css';
 
 type PlantOperationStyle = CSSProperties & { [key: `--${string}`]: string | number };
 type PlantOperationTopologyContent = Omit<PlantOperationTopologyData, 'layout'>;
+
+type PlantOperationDiagramSectionProps = {
+  data: PlantOperationStatusData | null;
+  isLoading: boolean;
+  errorMessage: string;
+};
 
 type Point = {
   x: number;
@@ -464,15 +470,34 @@ function TopologyLines({ topology }: { topology: PlantOperationTopologyData }) {
 
 /*
  * 필요: 발전소 운영현황의 설비 배치와 선 연결을 한 판에서 렌더링한다.
- * 연결: plantOperationStatusMock, plantOperationTopologyLayout, PageCard, /dashboard/plant-operation-status.
- * 설명: mock 값과 배치 기준을 조합하고, 실제 판 크기는 배치된 요소와 선 규칙에서 계산한다.
- * 수정: 데이터는 mock, 기준점과 선은 constants, 표현 스타일은 CSS에서 조정한다.
+ * 연결: usePlantOperationStatus, plantOperationTopologyLayout, PageCard, /dashboard/plant-operation-status.
+ * 설명: API adapter가 만든 ViewModel과 배치 기준을 조합하고, 실제 판 크기는 배치된 요소와 선 규칙에서 계산한다.
+ * 수정: 데이터 매핑은 adapter, 기준점과 선은 constants, 표현 스타일은 CSS에서 조정한다.
  */
-export function PlantOperationDiagramSection() {
-  const topology = createPlantOperationTopology(plantOperationStatusMock);
-  const boardStyle = getBoardStyle(topology.layout);
+export function PlantOperationDiagramSection({ data, isLoading, errorMessage }: PlantOperationDiagramSectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
+
+  if (isLoading) {
+    return (
+      <PageCard title="발전설비 운영 현황" className="plant-operation-card">
+        <PageDataLoadingFallback title="발전소 운영현황" />
+      </PageCard>
+    );
+  }
+
+  if (errorMessage || !data) {
+    return (
+      <PageCard title="발전설비 운영 현황" className="plant-operation-card">
+        <div className="plant-operation-status-message plant-operation-status-message--error" role="alert">
+          {errorMessage || '발전소 운영현황 데이터가 없습니다.'}
+        </div>
+      </PageCard>
+    );
+  }
+
+  const topology = createPlantOperationTopology(data);
+  const boardStyle = getBoardStyle(topology.layout);
 
   function isInteractiveTarget(target: EventTarget | null) {
     return target instanceof Element && Boolean(target.closest('table, .plant-operation-node-pill, button, a, input, select, textarea'));

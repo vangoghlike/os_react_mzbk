@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuthSession } from '../../features/auth/session/AuthSessionProvider';
 import { commonLogoSources } from '../assets/logos/commonLogoSources';
-import { navigationGroups } from './navigationGroups';
+import { getNavigationGroups } from './navigationMenuAdapter';
 import './Sidebar.css';
 
 type SidebarProps = {
@@ -36,16 +37,24 @@ function SidebarCloseIcon() {
   );
 }
 
+function getMatchPaths(item: { path: string; matchPaths?: string[] }) {
+  return [item.path, ...(item.matchPaths ?? [])];
+}
+
 export function Sidebar({ collapsed, onRequestExpand, onRequestClose, onNavigate }: SidebarProps) {
   const location = useLocation();
+  const { session } = useAuthSession();
+
+  // API 권한 메뉴를 우선 사용하고, 샘플/확인용 메뉴는 adapter에서 별도 그룹으로 붙인다.
+  const navigationGroups = useMemo(() => getNavigationGroups(session?.menus ?? []), [session?.menus]);
 
   // 현재 경로를 기준으로 기본 펼침 상태를 맞춘다.
   const defaultOpenState = useMemo(() => {
     return navigationGroups.reduce<Record<string, boolean>>((acc, group) => {
-      acc[group.key] = group.items.some((item) => location.pathname.startsWith(item.path));
+      acc[group.key] = group.items.some((item) => getMatchPaths(item).some((path) => location.pathname.startsWith(path)));
       return acc;
     }, {});
-  }, [location.pathname]);
+  }, [location.pathname, navigationGroups]);
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenState);
 
@@ -70,7 +79,7 @@ export function Sidebar({ collapsed, onRequestExpand, onRequestClose, onNavigate
   return (
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`.trim()}>
       <div className="sidebar__top">
-        <NavLink to="/dashboard/plant-operation-status" className="sidebar__brand" aria-label="발전소 운영현황으로 이동" onClick={onNavigate}>
+        <NavLink to="/monitoring/dashboard" className="sidebar__brand" aria-label="대시보드로 이동" onClick={onNavigate}>
           <img src={commonLogoSources.sidebarBrand.src} alt={commonLogoSources.sidebarBrand.alt} className="sidebar__logo" />
         </NavLink>
 
@@ -84,7 +93,7 @@ export function Sidebar({ collapsed, onRequestExpand, onRequestClose, onNavigate
           <div
             key={group.key}
             className={`sidebar__group ${openMap[group.key] ? 'is-open' : ''} ${
-              group.items.some((item) => location.pathname.startsWith(item.path)) ? 'is-current' : ''
+              group.items.some((item) => getMatchPaths(item).some((path) => location.pathname.startsWith(path))) ? 'is-current' : ''
             }`.trim()}
           >
             <button
@@ -106,7 +115,9 @@ export function Sidebar({ collapsed, onRequestExpand, onRequestClose, onNavigate
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className={({ isActive }) => `sidebar__item ${isActive ? 'is-active' : ''}`.trim()}
+                  className={() =>
+                    `sidebar__item ${getMatchPaths(item).some((path) => location.pathname.startsWith(path)) ? 'is-active' : ''}`.trim()
+                  }
                   onClick={onNavigate}
                 >
                   {!collapsed && <span>{item.label}</span>}

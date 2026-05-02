@@ -6,9 +6,9 @@ import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
 import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
-import { powerConsumptionHistoryChartMock } from '../mock/powerConsumptionHistoryChartMock';
-import { powerConsumptionHistoryMetricTabsMock } from '../mock/powerConsumptionHistoryFilterMock';
-import { powerConsumptionHistoryTableMock } from '../mock/powerConsumptionHistoryTableMock';
+import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
+import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
+import { powerConsumptionHistoryMetrics } from '../constants/powerConsumptionHistoryConfig';
 import type { PowerConsumptionHistoryMetric, PowerConsumptionHistoryMode } from '../types/powerConsumptionHistory';
 import '../styles/PowerConsumptionHistoryResultSection.css';
 
@@ -18,23 +18,44 @@ type PowerConsumptionHistoryResultSectionProps = {
 };
 
 /*
- * 필요: 전력소비 이력의 지표 탭, 차트, 표, 엑셀 저장을 한 결과 패널로 묶는다.
- * 연결: MetricTabs, BaseChart, BasicTable, ExcelSaveButton, power history mock.
- * 설명: 조회 조건과 지표 선택은 화면 상태만 재현하며 실제 조회는 하지 않는다.
+ * 필요: 전력소비 이력의 지표 탭, 차트, 표, 엑셀 저장을 API 데이터로 묶는다.
+ * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, BasicTable, ExcelSaveButton.
+ * 설명: 전력소비 전용 이력 endpoint 확정 전까지 GRID 이력 API를 기준 데이터로 사용한다.
  * 수정: 결과 영역 간격과 표 위치는 styles/PowerConsumptionHistoryResultSection.css에서 조정한다.
  */
 export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedAt }: PowerConsumptionHistoryResultSectionProps) {
   const [metric, setMetric] = useState<PowerConsumptionHistoryMetric>('Max kWh');
+  const historyConfig = useMemo(
+    () => ({
+      resource: 'grid' as const,
+      metrics: powerConsumptionHistoryMetrics,
+      tableTitle: '전력소비 이력',
+      minWidth: 1280,
+      barField: 'baAtpTot',
+      lineField: 'baRtpTot',
+      fields: [
+        { label: 'TOTAL kWh', key: 'baAtpTot' },
+        { label: 'Reactive', key: 'baRtpTot' },
+        { label: 'PF', key: 'baPfTot' },
+        { label: 'V L12', key: 'baPtpvL12' },
+        { label: 'A L1', key: 'baPaL1' },
+        { label: 'FR L1', key: 'baPfrL1' }
+      ],
+      searchCriteria
+    }),
+    [searchCriteria]
+  );
+  const { data, isLoading, errorMessage } = useMonitoringHistoryViewData(historyConfig);
 
   const chartOption = useMemo<EChartsOption>(
     () => ({
-      color: ['#2f9cff', '#c9f21f'],
+      color: ['#2f9cff', '#f3f6ff'],
       tooltip: { trigger: 'axis' },
       legend: { bottom: 0, textStyle: { color: '#d6ddea' } },
       grid: { left: 24, right: 24, top: 30, bottom: 64, containLabel: true },
       xAxis: {
         type: 'category',
-        data: powerConsumptionHistoryChartMock.labels,
+        data: data?.labels ?? [],
         axisLabel: { color: '#b8c2d8' },
         axisLine: { lineStyle: { color: '#354057' } }
       },
@@ -47,20 +68,20 @@ export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedA
       },
       series: [
         {
-          name: 'Total',
+          name: '유효전력',
           type: 'bar',
-              barWidth: 44,
-          data: powerConsumptionHistoryChartMock.totalSeriesByMetric[metric]
+          barWidth: 44,
+          data: data?.barSeriesByMetric[metric] ?? []
         },
         {
-          name: 'BANK AVG',
+          name: '무효전력',
           type: 'line',
-              smooth: false,
-          data: powerConsumptionHistoryChartMock.bankAverageSeriesByMetric[metric]
+          smooth: false,
+          data: data?.lineSeriesByMetric[metric] ?? []
         }
       ]
     }),
-    [metric]
+    [data, metric]
   );
 
   return (
@@ -68,31 +89,31 @@ export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedA
       <MetricTabs
         ariaLabel="전력소비 이력 지표"
         value={metric}
-        options={powerConsumptionHistoryMetricTabsMock}
+        options={powerConsumptionHistoryMetrics}
         onChange={setMetric}
       />
-      <div className="history-query-status" aria-live="polite">
+      <div className="sr-only" aria-live="polite">
         조회 조건: {searchCriteria.mode} / {searchCriteria.startDate || '-'} ~ {searchCriteria.endDate || '-'} / 조회 시각: {searchedAt}
       </div>
-      <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
-      <div className="power-consumption-history-result__table">
-        <ExcelSaveButton
-          fileName={`전력소비_이력_${searchCriteria.mode}`}
-          sheets={[
-            {
-              name: '전력소비 이력',
-              headerRows: powerConsumptionHistoryTableMock.headerRows,
-              rows: powerConsumptionHistoryTableMock.rows
-            }
-          ]}
-        />
-        <BasicTable
-          ariaLabel={powerConsumptionHistoryTableMock.ariaLabel}
-          headerRows={powerConsumptionHistoryTableMock.headerRows}
-          rows={powerConsumptionHistoryTableMock.rows}
-          minWidth={powerConsumptionHistoryTableMock.minWidth}
-        />
-      </div>
+      {isLoading && <PageDataLoadingFallback title="전력소비 이력" />}
+      {!isLoading && errorMessage && <div role="alert">{errorMessage}</div>}
+      {!isLoading && data && (
+        <>
+          <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
+          <div className="power-consumption-history-result__table">
+            <ExcelSaveButton
+              fileName={`전력소비_이력_${searchCriteria.mode}`}
+              sheets={[{ name: '전력소비 이력', headerRows: data.table.headerRows, rows: data.table.rows }]}
+            />
+            <BasicTable
+              ariaLabel={data.table.ariaLabel}
+              headerRows={data.table.headerRows}
+              rows={data.table.rows}
+              minWidth={data.table.minWidth}
+            />
+          </div>
+        </>
+      )}
     </PageCard>
   );
 }

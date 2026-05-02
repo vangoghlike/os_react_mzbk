@@ -74,8 +74,8 @@ function renderSheet(sheet: ExcelExportSheet) {
 }
 
 /*
- * 필요: mock 표 데이터를 별도 라이브러리 없이 Excel에서 열 수 있는 파일로 저장한다.
- * 연결: ExcelSaveButton과 feature별 table mock.
+ * 필요: 화면 표 데이터를 별도 라이브러리 없이 Excel에서 열 수 있는 파일로 저장한다.
+ * 연결: ExcelSaveButton과 feature별 table view model.
  * 설명: 실제 서버 엑셀 생성이 아니라 퍼블리싱용 브라우저 다운로드이며, 병합 헤더는 HTML 표로 보존한다.
  * 수정: 파일 포맷을 xlsx로 바꾸려면 이 유틸만 교체한다.
  */

@@ -7,6 +7,7 @@ type PageCardProps = {
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  ariaLabel?: string;
 };
 
 /*
@@ -15,9 +16,9 @@ type PageCardProps = {
  * 설명: 화면별 세부 배치는 section CSS에 두고 카드 골격만 공통으로 유지한다.
  * 수정: 카드 공통 여백과 보더는 PageCard.css에서 조정한다.
  */
-export function PageCard({ title, subtitle, actions, children, className = '' }: PageCardProps) {
+export function PageCard({ title, subtitle, actions, children, className = '', ariaLabel }: PageCardProps) {
   return (
-    <section className={`card ${className}`.trim()}>
+    <section className={`card ${className}`.trim()} aria-label={ariaLabel}>
       {(title || subtitle || actions) && (
         <header className="card__header">
           <div>

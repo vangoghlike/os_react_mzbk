@@ -4,27 +4,30 @@ import { DataTableCard } from '../../../../shared/ui/DataTableCard';
 import { DetailToggleBar } from '../../../../shared/ui/DetailToggleBar';
 import { EquipmentSelect } from '../../../../shared/ui/EquipmentSelect';
 import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
-import { supportGenerationTableMock } from '../mock/supportGenerationTableMock';
+import type { SupportGenerationDetailTableData } from '../types/supportGenerationStatus';
 import '../styles/SupportGenerationDetailTableSection.css';
 
+type SupportGenerationDetailTableSectionProps = {
+  table: SupportGenerationDetailTableData;
+};
+
 /*
- * 필요: 보조발전 운전 상세 표와 Diesel 상세 접힘 영역을 구성한다.
- * 연결: DataTableCard, DetailToggleBar, EquipmentSelect, ExcelSaveButton, supportGenerationTableMock.
- * 설명: 표 카드 구조는 공통으로 쓰고 장비 선택과 접힘 상태만 화면에서 관리한다.
+ * 필요: 보조 발전현황 상세 표와 장비별 접힘 표를 API 표 데이터로 표시한다.
+ * 연결: DataTableCard, DetailToggleBar, EquipmentSelect, ExcelSaveButton, useSupportGenerationStatus.
+ * 설명: 표 헤더/행/장비 옵션은 adapter에서 만든 view model을 사용하고 section은 UI 상태만 가진다.
  * 수정: 상세 패널 간격은 styles/SupportGenerationDetailTableSection.css에서 조정한다.
  */
-export function SupportGenerationDetailTableSection() {
-  const [expanded, setExpanded] = useState(supportGenerationTableMock.defaultExpanded);
-  const [equipment, setEquipment] = useState(supportGenerationTableMock.defaultEquipmentValue);
+export function SupportGenerationDetailTableSection({ table }: SupportGenerationDetailTableSectionProps) {
+  const [expanded, setExpanded] = useState(table.defaultExpanded);
+  const [equipment, setEquipment] = useState(table.defaultEquipmentValue);
 
   return (
     <div className="support-generation-detail">
       <DataTableCard
-        title="운전 상세 현황"
-        ariaLabel={supportGenerationTableMock.ariaLabel}
-        headerRows={supportGenerationTableMock.headerRows}
-        rows={supportGenerationTableMock.rows}
-        minWidth={supportGenerationTableMock.minWidth}
+        ariaLabel={table.ariaLabel}
+        headerRows={table.headerRows}
+        rows={table.rows}
+        minWidth={table.minWidth}
         excel={{ fileName: '보조발전_운전상세현황', sheetName: '운전 상세 현황' }}
         className="support-generation-detail__panel"
       />
@@ -34,24 +37,24 @@ export function SupportGenerationDetailTableSection() {
       <CollapsibleContent open={expanded}>
         <DataTableCard
           ariaLabel="보조 발전현황 장비 상세 내역"
-          headerRows={supportGenerationTableMock.headerRows}
-          rows={supportGenerationTableMock.rows}
-          minWidth={supportGenerationTableMock.minWidth}
+          headerRows={table.headerRows}
+          rows={table.rows}
+          minWidth={table.minWidth}
           actions={
             <div className="inline-actions">
               <EquipmentSelect
                 aria-label="보조발전 장비 선택"
                 value={equipment}
                 onChange={(event) => setEquipment(event.target.value)}
-                options={supportGenerationTableMock.equipmentOptions}
+                options={table.equipmentOptions}
               />
               <ExcelSaveButton
                 fileName={`보조발전_${equipment}_상세내역`}
                 sheets={[
                   {
                     name: 'Diesel 상세 내역',
-                    headerRows: supportGenerationTableMock.headerRows,
-                    rows: supportGenerationTableMock.rows
+                    headerRows: table.headerRows,
+                    rows: table.rows
                   }
                 ]}
               />

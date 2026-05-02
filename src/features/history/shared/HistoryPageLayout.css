@@ -1,0 +1,31 @@
+.history-page {
+  gap: 32px;
+}
+
+.history-page .page-heading {
+  min-height: 188px;
+  align-items: flex-start;
+}
+
+.history-page .page-heading__actions {
+  flex: 1;
+  align-self: flex-end;
+  justify-content: flex-end;
+  min-width: min(100%, 980px);
+}
+
+.history-page .history-search-bar {
+  max-width: 1088px;
+  margin-left: auto;
+}
+
+@media (max-width: 1280px) {
+  .history-page .page-heading {
+    min-height: 0;
+  }
+
+  .history-page .page-heading__actions {
+    width: 100%;
+    min-width: 0;
+  }
+}

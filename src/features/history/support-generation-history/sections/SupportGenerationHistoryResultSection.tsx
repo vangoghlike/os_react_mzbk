@@ -6,9 +6,9 @@ import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
 import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
-import { supportGenerationHistoryChartMock } from '../mock/supportGenerationHistoryChartMock';
-import { supportGenerationHistoryMetricTabsMock } from '../mock/supportGenerationHistoryFilterMock';
-import { supportGenerationHistoryTableMock } from '../mock/supportGenerationHistoryTableMock';
+import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
+import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
+import { supportGenerationHistoryMetrics } from '../constants/supportGenerationHistoryConfig';
 import type { SupportGenerationHistoryMetric, SupportGenerationHistoryMode } from '../types/supportGenerationHistory';
 import '../styles/SupportGenerationHistoryResultSection.css';
 
@@ -18,23 +18,44 @@ type SupportGenerationHistoryResultSectionProps = {
 };
 
 /*
- * 필요: 보조발전 이력의 지표 탭, 차트, 상세 표, 엑셀 저장을 한 패널로 구성한다.
- * 연결: MetricTabs, BaseChart, BasicTable, ExcelSaveButton, support history mock.
- * 설명: 탭 변경은 mock series만 바꾸고 실제 데이터 조회는 하지 않는다.
+ * 필요: 보조발전 이력의 지표 탭, 차트, 상세 표, 엑셀 저장을 API 데이터로 구성한다.
+ * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, BasicTable, ExcelSaveButton.
+ * 설명: 보조발전 이력은 ESS 이력 API를 기준으로 받아 공통 history view model로 변환한다.
  * 수정: 차트 높이와 표 간격은 styles/SupportGenerationHistoryResultSection.css에서 조정한다.
  */
 export function SupportGenerationHistoryResultSection({ searchCriteria, searchedAt }: SupportGenerationHistoryResultSectionProps) {
   const [metric, setMetric] = useState<SupportGenerationHistoryMetric>('Max kWh');
+  const historyConfig = useMemo(
+    () => ({
+      resource: 'ess' as const,
+      metrics: supportGenerationHistoryMetrics,
+      tableTitle: '보조발전 이력',
+      minWidth: 1280,
+      barField: 'essAtpTot',
+      lineField: 'essRtpTot',
+      fields: [
+        { label: 'ACTIVE POWER', key: 'essAtpTot' },
+        { label: 'REACTIVE POWER', key: 'essRtpTot' },
+        { label: 'APPARENT POWER', key: 'essArpTot' },
+        { label: 'PF', key: 'essPfTot' },
+        { label: 'SOC', key: 'essPlntSoc' },
+        { label: 'SOH', key: 'essPlntSoh' }
+      ],
+      searchCriteria
+    }),
+    [searchCriteria]
+  );
+  const { data, isLoading, errorMessage } = useMonitoringHistoryViewData(historyConfig);
 
   const chartOption = useMemo<EChartsOption>(
     () => ({
-      color: ['#2f9cff', '#c9f21f', '#f4f7ff'],
+      color: ['#2f9cff', '#f3f6ff'],
       tooltip: { trigger: 'axis' },
       legend: { bottom: 0, textStyle: { color: '#d6ddea' } },
       grid: { left: 24, right: 24, top: 30, bottom: 64, containLabel: true },
       xAxis: {
         type: 'category',
-        data: supportGenerationHistoryChartMock.labels,
+        data: data?.labels ?? [],
         axisLabel: { color: '#b8c2d8' },
         axisLine: { lineStyle: { color: '#354057' } }
       },
@@ -47,26 +68,20 @@ export function SupportGenerationHistoryResultSection({ searchCriteria, searched
       },
       series: [
         {
-          name: 'Total',
+          name: 'ACTIVE POWER',
           type: 'bar',
-              barWidth: 44,
-          data: supportGenerationHistoryChartMock.totalSeriesByMetric[metric]
+          barWidth: 44,
+          data: data?.barSeriesByMetric[metric] ?? []
         },
         {
-          name: 'Diesel',
+          name: 'REACTIVE POWER',
           type: 'line',
-              smooth: false,
-          data: supportGenerationHistoryChartMock.dieselSeriesByMetric[metric]
-        },
-        {
-          name: 'Battery',
-          type: 'line',
-              smooth: false,
-          data: supportGenerationHistoryChartMock.batterySeriesByMetric[metric]
+          smooth: false,
+          data: data?.lineSeriesByMetric[metric] ?? []
         }
       ]
     }),
-    [metric]
+    [data, metric]
   );
 
   return (
@@ -74,31 +89,31 @@ export function SupportGenerationHistoryResultSection({ searchCriteria, searched
       <MetricTabs
         ariaLabel="보조발전 이력 지표"
         value={metric}
-        options={supportGenerationHistoryMetricTabsMock}
+        options={supportGenerationHistoryMetrics}
         onChange={setMetric}
       />
-      <div className="history-query-status" aria-live="polite">
+      <div className="sr-only" aria-live="polite">
         조회 조건: {searchCriteria.mode} / {searchCriteria.startDate || '-'} ~ {searchCriteria.endDate || '-'} / 조회 시각: {searchedAt}
       </div>
-      <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
-      <div className="support-generation-history-result__table">
-        <ExcelSaveButton
-          fileName={`보조발전_이력_${searchCriteria.mode}`}
-          sheets={[
-            {
-              name: '보조발전 이력',
-              headerRows: supportGenerationHistoryTableMock.headerRows,
-              rows: supportGenerationHistoryTableMock.rows
-            }
-          ]}
-        />
-        <BasicTable
-          ariaLabel={supportGenerationHistoryTableMock.ariaLabel}
-          headerRows={supportGenerationHistoryTableMock.headerRows}
-          rows={supportGenerationHistoryTableMock.rows}
-          minWidth={supportGenerationHistoryTableMock.minWidth}
-        />
-      </div>
+      {isLoading && <PageDataLoadingFallback title="보조발전 이력" />}
+      {!isLoading && errorMessage && <div role="alert">{errorMessage}</div>}
+      {!isLoading && data && (
+        <>
+          <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
+          <div className="support-generation-history-result__table">
+            <ExcelSaveButton
+              fileName={`보조발전_이력_${searchCriteria.mode}`}
+              sheets={[{ name: '보조발전 이력', headerRows: data.table.headerRows, rows: data.table.rows }]}
+            />
+            <BasicTable
+              ariaLabel={data.table.ariaLabel}
+              headerRows={data.table.headerRows}
+              rows={data.table.rows}
+              minWidth={data.table.minWidth}
+            />
+          </div>
+        </>
+      )}
     </PageCard>
   );
 }

@@ -6,11 +6,9 @@ import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
 import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
-import { gridBaseGenerationHistoryChartMock } from '../mock/gridBaseGenerationHistoryChartMock';
-import {
-  gridBaseGenerationHistoryMetricTabsMock
-} from '../mock/gridBaseGenerationHistoryFilterMock';
-import { gridBaseGenerationHistoryTableMock } from '../mock/gridBaseGenerationHistoryTableMock';
+import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
+import { gridBaseGenerationHistoryMetrics } from '../constants/gridBaseGenerationHistoryConfig';
+import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
 import type { GridBaseGenerationHistoryMetric, GridBaseGenerationHistoryMode } from '../types/gridBaseGenerationHistory';
 import '../styles/GridBaseGenerationHistoryResultSection.css';
 
@@ -20,13 +18,34 @@ type GridBaseGenerationHistoryResultSectionProps = {
 };
 
 /*
- * 필요: 지표 탭, 이력 차트, 이력 상세 표, 엑셀 버튼을 한 결과 패널로 묶는다.
- * 연결: MetricTabs, BaseChart, BasicTable, ExcelSaveButton, grid history mock.
- * 설명: 탭 선택에 따라 mock series만 바꾸고 실제 재조회는 하지 않는다.
- * 수정: 결과 표 위치와 차트 높이는 styles/GridBaseGenerationHistoryResultSection.css에서 조정한다.
+ * 필요: GRID 이력 차트와 표를 API 이력 데이터로 표시한다.
+ * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, BasicTable, ExcelSaveButton.
+ * 설명: /monitoring/grid/history 응답을 공통 history view model로 변환한다.
+ * 수정: GRID 이력 필드 추가/삭제는 config fields만 조정한다.
  */
 export function GridBaseGenerationHistoryResultSection({ searchCriteria, searchedAt }: GridBaseGenerationHistoryResultSectionProps) {
   const [metric, setMetric] = useState<GridBaseGenerationHistoryMetric>('Max kWh');
+  const historyConfig = useMemo(
+    () => ({
+      resource: 'grid' as const,
+      metrics: gridBaseGenerationHistoryMetrics,
+      tableTitle: 'GRID 기저발전 이력',
+      minWidth: 1280,
+      barField: 'baAtpTot',
+      lineField: 'baRtpTot',
+      fields: [
+        { label: 'TOTAL kWh', key: 'baAtpTot' },
+        { label: 'Reactive', key: 'baRtpTot' },
+        { label: 'PF', key: 'baPfTot' },
+        { label: 'V L12', key: 'baPtpvL12' },
+        { label: 'A L1', key: 'baPaL1' },
+        { label: 'FR L1', key: 'baPfrL1' }
+      ],
+      searchCriteria
+    }),
+    [searchCriteria]
+  );
+  const { data, isLoading, errorMessage } = useMonitoringHistoryViewData(historyConfig);
 
   const chartOption = useMemo<EChartsOption>(
     () => ({
@@ -36,7 +55,7 @@ export function GridBaseGenerationHistoryResultSection({ searchCriteria, searche
       grid: { left: 24, right: 24, top: 30, bottom: 64, containLabel: true },
       xAxis: {
         type: 'category',
-        data: gridBaseGenerationHistoryChartMock.labels,
+        data: data?.labels ?? [],
         axisLabel: { color: '#b8c2d8' },
         axisLine: { lineStyle: { color: '#354057' } }
       },
@@ -48,53 +67,39 @@ export function GridBaseGenerationHistoryResultSection({ searchCriteria, searche
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
       },
       series: [
-        {
-          name: '그래프 명1',
-          type: 'bar',
-              barWidth: 44,
-          data: gridBaseGenerationHistoryChartMock.barSeriesByMetric[metric]
-        },
-        {
-          name: '그래프 명1',
-          type: 'line',
-              smooth: false,
-          data: gridBaseGenerationHistoryChartMock.lineSeriesByMetric[metric]
-        }
+        { name: '유효전력', type: 'bar', barWidth: 44, data: data?.barSeriesByMetric[metric] ?? [] },
+        { name: '무효전력', type: 'line', smooth: false, data: data?.lineSeriesByMetric[metric] ?? [] }
       ]
     }),
-    [metric]
+    [data, metric]
   );
 
   return (
     <PageCard className="grid-base-history-result">
-      <MetricTabs
-        ariaLabel="GRID 기저발전 이력 지표"
-        value={metric}
-        options={gridBaseGenerationHistoryMetricTabsMock}
-        onChange={setMetric}
-      />
-      <div className="history-query-status" aria-live="polite">
+      <MetricTabs ariaLabel="GRID 기저발전 이력 지표" value={metric} options={gridBaseGenerationHistoryMetrics} onChange={setMetric} />
+      <div className="sr-only" aria-live="polite">
         조회 조건: {searchCriteria.mode} / {searchCriteria.startDate || '-'} ~ {searchCriteria.endDate || '-'} / 조회 시각: {searchedAt}
       </div>
-      <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
-      <div className="grid-base-history-result__table">
-        <ExcelSaveButton
-          fileName={`GRID_기저발전_이력_${searchCriteria.mode}`}
-          sheets={[
-            {
-              name: 'GRID 기저발전 이력',
-              headerRows: gridBaseGenerationHistoryTableMock.headerRows,
-              rows: gridBaseGenerationHistoryTableMock.rows
-            }
-          ]}
-        />
-        <BasicTable
-          ariaLabel={gridBaseGenerationHistoryTableMock.ariaLabel}
-          headerRows={gridBaseGenerationHistoryTableMock.headerRows}
-          rows={gridBaseGenerationHistoryTableMock.rows}
-          minWidth={gridBaseGenerationHistoryTableMock.minWidth}
-        />
-      </div>
+
+      {isLoading && <PageDataLoadingFallback title="GRID 기저발전 이력" />}
+      {!isLoading && errorMessage && <div role="alert">{errorMessage}</div>}
+      {!isLoading && data && (
+        <>
+          <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
+          <div className="grid-base-history-result__table">
+            <ExcelSaveButton
+              fileName={`GRID_기저발전_이력_${searchCriteria.mode}`}
+              sheets={[{ name: 'GRID 기저발전 이력', headerRows: data.table.headerRows, rows: data.table.rows }]}
+            />
+            <BasicTable
+              ariaLabel={data.table.ariaLabel}
+              headerRows={data.table.headerRows}
+              rows={data.table.rows}
+              minWidth={data.table.minWidth}
+            />
+          </div>
+        </>
+      )}
     </PageCard>
   );
 }

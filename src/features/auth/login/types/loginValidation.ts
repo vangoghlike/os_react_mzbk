@@ -1,4 +1,4 @@
-export type LoginValidationStatus = 'idle' | 'checking' | 'valid' | 'invalid';
+export type LoginValidationStatus = 'idle' | 'checking' | 'invalid';
 
 export type LoginValidationState = {
   status: LoginValidationStatus;

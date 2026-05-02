@@ -1,33 +1,32 @@
 import { ChartSummaryPanel } from '../../../../shared/ui/ChartSummaryPanel';
-import {
-  pcsChargeDischargeChartMock,
-  pcsChargeDischargeDistributionMock,
-  pcsChargeDischargeSummaryColumns,
-  pcsChargeDischargeSummaryLegendLabels,
-  pcsChargeDischargeSummaryMetrics
-} from '../mock/pcsChargeDischargeChartMock';
+import type { PcsChargeDischargeChartData, PcsChargeDischargeSummaryData } from '../types/pcsChargeDischargeStatus';
+
+type PcsChargeDischargeSummarySectionProps = {
+  summary: PcsChargeDischargeSummaryData;
+  chart: PcsChargeDischargeChartData;
+};
 
 /*
- * 필요: PCS 충방전 도넛, 요약 표, 충전/방전 막대 차트를 구성한다.
- * 연결: ChartSummaryPanel, pcsChargeDischargeChartMock.
- * 설명: 충전/방전 series는 mock만 사용하고 공통 현황형 패널로 렌더링한다.
- * 수정: 색상/패딩/축/도넛 형태는 ChartSummaryPanel에서 공통 조정한다.
+ * 필요: PCS 충방전 상단 패널을 API view model과 연결한다.
+ * 연결: ChartSummaryPanel, usePcsChargeDischargeStatus.
+ * 설명: 충전/방전 series 값만 전달하고, 도넛/요약/차트 레이아웃은 공통 컴포넌트가 담당한다.
+ * 수정: 충전/방전 기준값은 adapter에서 조정한다.
  */
-export function PcsChargeDischargeSummarySection() {
+export function PcsChargeDischargeSummarySection({ summary, chart }: PcsChargeDischargeSummarySectionProps) {
   return (
     <ChartSummaryPanel
-      donutTitle="그래프 제목"
-      donutData={pcsChargeDischargeDistributionMock}
-      donutLegendLabels={pcsChargeDischargeSummaryLegendLabels}
-      donutColors={['#25b6fe', '#d20000']}
+      donutTitle="충방전 비중"
+      donutData={summary.donutData}
+      donutLegendLabels={summary.donutLegendLabels}
+      donutColors={summary.donutColors}
       summaryAriaLabel="PCS 충방전 요약"
-      summaryColumns={pcsChargeDischargeSummaryColumns}
-      summaryMetrics={pcsChargeDischargeSummaryMetrics}
-      chartLabels={pcsChargeDischargeChartMock.labels}
+      summaryColumns={summary.columns}
+      summaryMetrics={summary.metrics}
+      chartLabels={chart.labels}
       chartYAxisName="Total kWh"
       chartSeries={[
-        { name: '충전 표시', type: 'bar', stack: 'charge', data: pcsChargeDischargeChartMock.chargeSeries },
-        { name: '방전 표시', type: 'bar', stack: 'charge', data: pcsChargeDischargeChartMock.dischargeSeries }
+        { name: '충전 표시', type: 'bar', stack: 'charge', data: chart.chargeSeries },
+        { name: '방전 표시', type: 'bar', stack: 'charge', data: chart.dischargeSeries, color: '#d20000' }
       ]}
     />
   );

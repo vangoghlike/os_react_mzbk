@@ -20,8 +20,8 @@ type DateRangeBarProps = {
 
 /*
  * 필요: 리포트 화면의 기간 선택과 조회 버튼을 공통 폼으로 묶는다.
- * 연결: OperationReportPage의 mock 조회 상태.
- * 설명: 실제 API 조회 없이 선택된 조건만 부모 section으로 전달한다.
+ * 연결: OperationReportPage의 API 조회 상태.
+ * 설명: 선택된 조건만 부모 section으로 전달하고 호출부가 API를 다시 조회한다.
  * 수정: 기본 날짜와 조회 기준은 호출부 props에서 조정한다.
  */
 export function DateRangeBar({

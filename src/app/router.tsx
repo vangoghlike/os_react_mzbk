@@ -3,6 +3,8 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuthSession } from '../features/auth/session/AuthSessionProvider';
 import { AuthLayout } from '../shared/layouts/AuthLayout';
 import { DashboardLayout } from '../shared/layouts/DashboardLayout';
+import { PageDocumentTitle } from '../shared/navigation/PageDocumentTitle';
+import { useNavigationPageTitle } from '../shared/navigation/useNavigationPageTitle';
 import { PageLoadingFallback } from '../shared/ui/PageLoadingFallback';
 
 const LoginPage = lazy(() => import('../features/auth/login/page/LoginPage').then((module) => ({ default: module.LoginPage })));
@@ -27,6 +29,11 @@ const PcsChargeDischargeStatusPage = lazy(() =>
 const PowerConsumptionStatusPage = lazy(() =>
   import('../features/dashboard/power-consumption-status/page/PowerConsumptionStatusPage').then((module) => ({
     default: module.PowerConsumptionStatusPage
+  }))
+);
+const AcStatusPage = lazy(() =>
+  import('../features/dashboard/ac-status/page/AcStatusPage').then((module) => ({
+    default: module.AcStatusPage
   }))
 );
 const GridBaseGenerationHistoryPage = lazy(() =>
@@ -58,9 +65,13 @@ const PopupSamplesPage = lazy(() => import('../pages/system/PopupSamplesPage').t
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 
 function AuthOutlet() {
-  const { isAuthenticated } = useAuthSession();
+  const { isAuthenticated, isInitializing } = useAuthSession();
   const location = useLocation();
   const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard/base-generation';
+
+  if (isInitializing) {
+    return <PageLoadingFallback label="로그인 상태를 확인하는 중입니다." />;
+  }
 
   if (isAuthenticated) {
     return <Navigate to={fromPath} replace />;
@@ -68,6 +79,7 @@ function AuthOutlet() {
 
   return (
     <AuthLayout>
+      <PageDocumentTitle title="로그인" preferMenuTitle={false} />
       <Suspense fallback={<PageLoadingFallback label="로그인 화면을 불러오는 중입니다." />}>
         <Outlet />
       </Suspense>
@@ -75,9 +87,19 @@ function AuthOutlet() {
   );
 }
 
+function DashboardRouteLoadingFallback() {
+  const displayTitle = useNavigationPageTitle('화면');
+
+  return <PageLoadingFallback label={`${displayTitle} 화면을 불러오는 중입니다.`} />;
+}
+
 function DashboardOutlet() {
-  const { isAuthenticated } = useAuthSession();
+  const { isAuthenticated, isInitializing } = useAuthSession();
   const location = useLocation();
+
+  if (isInitializing) {
+    return <PageLoadingFallback label="로그인 상태를 확인하는 중입니다." />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -85,7 +107,8 @@ function DashboardOutlet() {
 
   return (
     <DashboardLayout>
-      <Suspense fallback={<PageLoadingFallback label="화면을 불러오는 중입니다." />}>
+      <PageDocumentTitle title="화면" />
+      <Suspense fallback={<DashboardRouteLoadingFallback />}>
         <Outlet />
       </Suspense>
     </DashboardLayout>
@@ -106,22 +129,48 @@ export function AppRouter() {
         <Route path="/dashboard/support-generation" element={<SupportGenerationStatusPage />} />
         <Route path="/dashboard/charge-discharge" element={<PcsChargeDischargeStatusPage />} />
         <Route path="/dashboard/power-consumption-status" element={<PowerConsumptionStatusPage />} />
+        <Route path="/dashboard/ac-status" element={<AcStatusPage />} />
+        <Route path="/monitoring/dashboard" element={<PlantOperationStatusPage />} />
+        <Route path="/monitoring/grid" element={<BaseGenerationPage />} />
+        <Route path="/monitoring/ess" element={<SupportGenerationStatusPage />} />
+        <Route path="/monitoring/diesel1" element={<SupportGenerationStatusPage />} />
+        <Route path="/monitoring/diesel2" element={<SupportGenerationStatusPage />} />
+        <Route path="/monitoring/pcs" element={<PcsChargeDischargeStatusPage />} />
+        <Route path="/monitoring/battery" element={<PcsChargeDischargeStatusPage />} />
+        <Route path="/monitoring/ac" element={<AcStatusPage />} />
         <Route path="/history/grid-base-generation-history" element={<GridBaseGenerationHistoryPage />} />
         <Route path="/history/support-generation-history" element={<SupportGenerationHistoryPage />} />
         <Route path="/history/pcs-charge-discharge-history" element={<PcsChargeDischargeHistoryPage />} />
         <Route path="/history/power-consumption-history" element={<PowerConsumptionHistoryPage />} />
         <Route path="/reports/operation" element={<OperationReportPage />} />
+        <Route path="/report/pcs" element={<OperationReportPage />} />
+        <Route path="/report/battery" element={<OperationReportPage />} />
+        <Route path="/report/diesel1" element={<OperationReportPage />} />
+        <Route path="/report/diesel2" element={<OperationReportPage />} />
+        <Route path="/report/grid" element={<OperationReportPage />} />
+        <Route path="/report/ess" element={<OperationReportPage />} />
+        <Route path="/report/ac" element={<OperationReportPage />} />
+        <Route path="/excel" element={<OperationReportPage />} />
         <Route path="/admin/master" element={<MasterManagementPage />} />
         <Route path="/admin/code" element={<CodeManagementPage />} />
         <Route path="/admin/user" element={<UserManagementPage />} />
         <Route path="/admin/role" element={<RoleManagementPage />} />
+        <Route path="/master/plants" element={<MasterManagementPage />} />
+        <Route path="/master/pcs" element={<MasterManagementPage />} />
+        <Route path="/master/inverters" element={<MasterManagementPage />} />
+        <Route path="/master/batteries" element={<MasterManagementPage />} />
+        <Route path="/master/diesels" element={<MasterManagementPage />} />
+        <Route path="/system/roles" element={<RoleManagementPage />} />
+        <Route path="/system/menus" element={<RoleManagementPage />} />
+        <Route path="/system/users" element={<UserManagementPage />} />
+        <Route path="/system/codes" element={<CodeManagementPage />} />
         <Route path="/system/popups" element={<PopupSamplesPage />} />
       </Route>
 
       <Route
         path="*"
         element={
-          <Suspense fallback={<PageLoadingFallback label="화면을 불러오는 중입니다." />}>
+          <Suspense fallback={<DashboardRouteLoadingFallback />}>
             <NotFoundPage />
           </Suspense>
         }

@@ -27,11 +27,11 @@ export const commonIconSources = {
     alt: '운영 리포트 아이콘'
   },
   adminManagement: {
-    src: localIcoSources.operationStatus,
+    src: localIcoSources.adminManagement,
     alt: '관리자 화면 아이콘'
   },
   systemSamples: {
-    src: localIcoSources.operationStatus,
+    src: localIcoSources.systemSamples,
     alt: '시스템 샘플 아이콘'
   },
   baseGeneration: {
@@ -53,6 +53,10 @@ export const commonIconSources = {
   powerConsumption: {
     src: createIconDataUri('#6CD6D0'),
     alt: '전력 소비 현황 아이콘'
+  },
+  acStatus: {
+    src: createIconDataUri('#6EC7FF'),
+    alt: '공조기 현황 아이콘'
   },
   gridHistory: {
     src: createIconDataUri('#7DA4FF'),

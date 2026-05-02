@@ -1,18 +1,21 @@
 .metric-tabs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
-  gap: 14px;
-  width: min(100%, 1040px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
 }
 
 .metric-tabs__item {
-  min-height: 58px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(31, 31, 50, 0.9);
-  color: #d6d9e4;
+  width: min(100%, 233px);
+  min-height: 62px;
+  border-radius: 5px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text-header-muted);
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 400;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
   transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
 }
 
@@ -27,7 +30,13 @@
 }
 
 .metric-tabs__item.is-active {
-  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+  background: linear-gradient(to left, var(--accent-blue) 0%, var(--accent-cyan) 100%);
   color: #fff;
   border-color: transparent;
+}
+
+@media (max-width: 720px) {
+  .metric-tabs__item {
+    width: 100%;
+  }
 }

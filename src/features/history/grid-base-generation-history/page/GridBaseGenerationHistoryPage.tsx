@@ -1,24 +1,22 @@
 import { useState } from 'react';
 import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
-import { gridBaseGenerationHistoryFilterMock } from '../mock/gridBaseGenerationHistoryFilterMock';
+import { gridBaseGenerationHistoryDefaultCriteria } from '../constants/gridBaseGenerationHistoryConfig';
 import { GridBaseGenerationHistoryResultSection } from '../sections/GridBaseGenerationHistoryResultSection';
 import { GridBaseGenerationHistorySearchSection } from '../sections/GridBaseGenerationHistorySearchSection';
 import type { GridBaseGenerationHistoryMode } from '../types/gridBaseGenerationHistory';
+import '../../shared/HistoryPageLayout.css';
 
 /*
- * 필요: GRID 기저발전 이력의 제목, 검색 조건, 결과 영역을 page에서 연결한다.
+ * 필요: GRID 기저발전 이력의 검색 조건과 API 결과 영역을 page에서 연결한다.
  * 연결: PageHeading actions, GridBaseGenerationHistorySearchSection, GridBaseGenerationHistoryResultSection.
- * 설명: 메뉴명과 route 확정 전에도 화면 구조를 독립 feature로 확인할 수 있게 한다.
- * 수정: 검색 조건 노출 위치는 PageHeading actions 연결을 조정한다.
+ * 설명: 기본 조건은 constants에 두고, 결과 데이터는 ResultSection의 API hook에서 조회한다.
+ * 수정: 검색 조건 기본값은 constants/gridBaseGenerationHistoryConfig.ts에서 조정한다.
  */
 export function GridBaseGenerationHistoryPage() {
-  const [searchCriteria, setSearchCriteria] = useState<HistorySearchCriteria<GridBaseGenerationHistoryMode>>({
-    mode: gridBaseGenerationHistoryFilterMock.defaultMode,
-    startDate: gridBaseGenerationHistoryFilterMock.defaultStartDate,
-    endDate: gridBaseGenerationHistoryFilterMock.defaultEndDate
-  });
-  const [searchedAt, setSearchedAt] = useState('초기 mock 데이터');
+  const [searchCriteria, setSearchCriteria] =
+    useState<HistorySearchCriteria<GridBaseGenerationHistoryMode>>(gridBaseGenerationHistoryDefaultCriteria);
+  const [searchedAt, setSearchedAt] = useState('조회 전');
 
   const handleSearch = (nextCriteria: HistorySearchCriteria<GridBaseGenerationHistoryMode>) => {
     setSearchCriteria(nextCriteria);
@@ -26,7 +24,7 @@ export function GridBaseGenerationHistoryPage() {
   };
 
   return (
-    <div className="page-stack">
+    <div className="page-stack history-page">
       <PageHeading title="GRID 기저발전 이력" actions={<GridBaseGenerationHistorySearchSection onSearch={handleSearch} />} />
       <GridBaseGenerationHistoryResultSection searchCriteria={searchCriteria} searchedAt={searchedAt} />
     </div>

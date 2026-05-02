@@ -90,14 +90,26 @@
 .role-filter__button {
   min-height: 36px;
   padding: 0 14px;
+  border: 1px solid transparent;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .role-filter__button.is-active {
-  background: rgba(39, 139, 255, 0.16);
-  color: #dbe9ff;
+  border-color: rgba(var(--primary-blue-rgb), 0.32);
+  background: rgba(var(--primary-blue-rgb), 0.18);
+  color: var(--text-white);
+}
+
+.list-panel__empty {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  color: var(--text-muted);
 }
 
 .form-grid {

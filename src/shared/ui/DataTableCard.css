@@ -3,6 +3,10 @@
   padding: 37px 48px 0 48px;
 }
 
+.data-table-card .card__header > div:first-child:empty {
+  display: none;
+}
+
 .data-table-card .card__title {
   color: var(--text-white);
   font-size: 1rem;
@@ -11,7 +15,19 @@
 }
 
 .data-table-card .card__actions {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
   margin-left: auto;
+}
+
+.data-table-card .inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
 }
 
 .data-table-card .card__body {

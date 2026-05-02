@@ -1,6 +1,9 @@
 import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
 import { HistorySearchBar } from '../../../../shared/ui/HistorySearchBar';
-import { gridBaseGenerationHistoryFilterMock } from '../mock/gridBaseGenerationHistoryFilterMock';
+import {
+  gridBaseGenerationHistoryDefaultCriteria,
+  gridBaseGenerationHistoryModes
+} from '../constants/gridBaseGenerationHistoryConfig';
 import type { GridBaseGenerationHistoryMode } from '../types/gridBaseGenerationHistory';
 
 type GridBaseGenerationHistorySearchSectionProps = {
@@ -9,17 +12,17 @@ type GridBaseGenerationHistorySearchSectionProps = {
 
 /*
  * 필요: Year, Month, Duration 조회 조건 UI를 이력 화면 상단에 붙인다.
- * 연결: HistorySearchBar, gridBaseGenerationHistoryFilterMock.
- * 설명: 검색 폼은 상태 재현만 담당하고 실제 조회 API는 호출하지 않는다.
- * 수정: 기본 선택값은 mock/gridBaseGenerationHistoryFilterMock.ts에서 조정한다.
+ * 연결: HistorySearchBar, gridBaseGenerationHistoryConfig.
+ * 설명: 검색 폼은 조건 상태만 만들고 결과 영역이 해당 조건으로 API를 조회한다.
+ * 수정: 모드 목록과 기본 날짜는 constants 파일에서 조정한다.
  */
 export function GridBaseGenerationHistorySearchSection({ onSearch }: GridBaseGenerationHistorySearchSectionProps) {
   return (
     <HistorySearchBar
-      modes={gridBaseGenerationHistoryFilterMock.modes}
-      defaultMode={gridBaseGenerationHistoryFilterMock.defaultMode}
-      defaultStartDate={gridBaseGenerationHistoryFilterMock.defaultStartDate}
-      defaultEndDate={gridBaseGenerationHistoryFilterMock.defaultEndDate}
+      modes={gridBaseGenerationHistoryModes}
+      defaultMode={gridBaseGenerationHistoryDefaultCriteria.mode}
+      defaultStartDate={gridBaseGenerationHistoryDefaultCriteria.startDate}
+      defaultEndDate={gridBaseGenerationHistoryDefaultCriteria.endDate}
       onSearch={onSearch}
     />
   );

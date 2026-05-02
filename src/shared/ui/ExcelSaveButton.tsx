@@ -16,7 +16,7 @@ type ExcelSaveButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'child
 /*
  * 필요: 여러 상세 표에 반복되는 전체엑셀 저장 버튼 모양을 통일한다.
  * 연결: ActionButton, commonIconSources, 각 feature table section.
- * 설명: 전달받은 mock 표 데이터를 브라우저 다운로드로 저장하고, 별도 클릭 동작도 함께 받을 수 있다.
+ * 설명: 전달받은 표 view model을 브라우저 다운로드로 저장하고, 별도 클릭 동작도 함께 받을 수 있다.
  * 수정: 아이콘 src/alt는 props나 shared/assets/icons/commonIconSources에서 조정한다.
  */
 export function ExcelSaveButton({

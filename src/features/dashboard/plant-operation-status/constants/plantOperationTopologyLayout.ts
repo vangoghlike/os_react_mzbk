@@ -36,8 +36,8 @@ export type PlantOperationTopologyPlacements = {
 
 /*
  * 필요: 발전소 운영현황 판의 기준점과 선 연결 규칙.
- * 연결: PlantOperationDiagramSection, plantOperationStatusMock.
- * 설명: 조회값 mock과 분리해 값 교체 시 배치 기준이 흔들리지 않게 한다.
+ * 연결: PlantOperationDiagramSection, plantOperationStatus API view model.
+ * 설명: 조회값과 분리해 값 교체 시 배치 기준이 흔들리지 않게 한다.
  * 수정: 칸 단위, 위치, 선 분배 기준은 이 파일에서만 조정한다.
  */
 export const plantOperationCanvasLayout: PlantOperationCanvasLayout = {

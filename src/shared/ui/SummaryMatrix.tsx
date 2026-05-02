@@ -17,7 +17,7 @@ type SummaryMatrixProps = {
 /*
  * 필요: 발전 현황 상단 요약표처럼 세로선 없는 헤더/지표 구조를 공통으로 렌더링한다.
  * 연결: 기저발전, 보조발전 상단 요약 섹션.
- * 설명: 실제 값은 feature mock이 관리하고, 이 컴포넌트는 표시 구조와 가로 스크롤만 담당한다.
+ * 설명: 실제 값은 feature API adapter가 관리하고, 이 컴포넌트는 표시 구조와 가로 스크롤만 담당한다.
  * 수정: 헤더 pill, 행 구분선, 반응형 스크롤 기준은 SummaryMatrix.css에서 조정한다.
  */
 export function SummaryMatrix({ columns, metrics, ariaLabel, minWidth = 780, className = '' }: SummaryMatrixProps) {

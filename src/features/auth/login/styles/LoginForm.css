@@ -33,39 +33,87 @@
   box-shadow: 0 0 0 4px rgba(32, 161, 251, 0.1);
 }
 
-.login-form__field--checking {
-  border-color: rgba(255, 200, 109, 0.78);
+.login-form__password-control {
+  position: relative;
+  display: block;
+  color: var(--text-main);
 }
 
-.login-form__field--valid {
-  border-color: rgba(55, 213, 124, 0.84);
+.login-form__field--password {
+  padding-right: 76px;
+}
+
+.login-form__password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+  opacity: 0.58;
+  transform: translateY(-50%);
+  transition: color 0.16s ease, background-color 0.16s ease, opacity 0.16s ease;
+}
+
+.login-form__password-toggle:hover,
+.login-form__password-toggle:focus-visible {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: currentColor;
+  opacity: 0.92;
+  outline: none;
+}
+
+.login-form__password-toggle svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .login-form__field--invalid {
   border-color: rgba(255, 93, 112, 0.92);
 }
 
+.login-form__field--checking {
+  border-color: var(--login-form-border);
+}
+
+.login-form__field--invalid + .login-form__password-toggle {
+  color: #ff8a98;
+  opacity: 0.9;
+}
+
 .login-form__validation {
   min-height: 17px;
   padding-left: 18px;
+  overflow: hidden;
   color: transparent;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: -0.02em;
+  text-overflow: ellipsis;
   transition: color 0.16s ease;
-}
-
-.login-form__validation--checking {
-  color: #ffc86d;
-}
-
-.login-form__validation--valid {
-  color: #73e6a9;
+  white-space: nowrap;
 }
 
 .login-form__validation--invalid {
   color: #ff8a98;
+}
+
+.login-form__validation--checking {
+  color: var(--login-form-border);
 }
 
 .login-form__toggle-row {
@@ -157,6 +205,21 @@
     min-height: 50px;
     padding-inline: 16px;
     font-size: 14px;
+  }
+
+  .login-form__field--password {
+    padding-right: 54px;
+  }
+
+  .login-form__password-toggle {
+    right: 8px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .login-form__password-toggle svg {
+    width: 20px;
+    height: 20px;
   }
 
   .login-form__toggle-row {
