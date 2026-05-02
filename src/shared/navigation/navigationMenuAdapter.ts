@@ -41,6 +41,15 @@ const apiRouteAliases: Record<string, string> = {
 
 const labelRouteRules: Array<{ includes: string[]; path: string }> = [
   { includes: ['발전소', '운영'], path: '/dashboard/plant-operation-status' },
+  { includes: ['GRID', '이력'], path: '/history/grid' },
+  { includes: ['ESS', '이력'], path: '/history/ess' },
+  { includes: ['PCS', '이력'], path: '/history/pcs' },
+  { includes: ['GRID', '현황'], path: '/monitoring/grid' },
+  { includes: ['ESS', '현황'], path: '/monitoring/ess' },
+  { includes: ['PCS', '현황'], path: '/monitoring/pcs' },
+  { includes: ['배터리', '현황'], path: '/monitoring/battery' },
+  { includes: ['디젤1', '현황'], path: '/monitoring/diesel1' },
+  { includes: ['디젤2', '현황'], path: '/monitoring/diesel2' },
   { includes: ['기저', '이력'], path: '/history/grid-base-generation-history' },
   { includes: ['기저'], path: '/dashboard/base-generation' },
   { includes: ['보조', '이력'], path: '/history/support-generation-history' },
@@ -146,6 +155,10 @@ function getGroupIcon(label: string, firstPath?: string) {
 }
 
 function getItemIcon(label: string, path: string) {
+  if (path === '/history/grid') return commonIconSources.gridHistory;
+  if (path === '/history/ess') return commonIconSources.supportHistory;
+  if (path === '/history/pcs') return commonIconSources.pcsHistory;
+  if (path === '/history/power-consumption') return commonIconSources.powerHistory;
   if (path.includes('grid-base-generation-history')) return commonIconSources.gridHistory;
   if (path.includes('support-generation-history')) return commonIconSources.supportHistory;
   if (path.includes('pcs-charge-discharge-history')) return commonIconSources.pcsHistory;
@@ -225,7 +238,7 @@ function getSupplementalGroups(baseGroups: NavigationGroup[]) {
     return [];
   }
 
-  // API 메뉴에 없는 퍼블리싱 확인용 화면은 중복 제거하지 않고 별도 그룹으로 유지한다.
+  // API 메뉴에 없는 이력 화면만 별도 그룹으로 유지해 현황 메뉴 중복을 막는다.
   return supplementalNavigationGroups;
 }
 

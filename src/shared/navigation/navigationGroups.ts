@@ -20,45 +20,74 @@ import { commonIconSources } from '../assets/icons/commonIconSources';
 
 export const productionNavigationGroups: NavigationGroup[] = [
   {
-    key: 'operation-status',
-    label: '운영 현황',
+    key: 'monitoring',
+    label: '모니터링',
     iconSrc: commonIconSources.operationStatus.src,
     iconAlt: commonIconSources.operationStatus.alt,
     source: 'fallback',
     items: [
       {
-        label: '발전소 운영현황',
-        path: '/dashboard/plant-operation-status',
+        label: '대시보드',
+        path: '/monitoring/dashboard',
+        matchPaths: ['/dashboard/plant-operation-status'],
         iconSrc: commonIconSources.plantOperation.src,
         iconAlt: commonIconSources.plantOperation.alt,
         source: 'fallback'
       },
       {
-        label: '기저발전',
-        path: '/dashboard/base-generation',
-        iconSrc: commonIconSources.baseGeneration.src,
-        iconAlt: commonIconSources.baseGeneration.alt,
-        source: 'fallback'
-      },
-      {
-        label: '보조발전',
-        path: '/dashboard/support-generation',
-        iconSrc: commonIconSources.supportGeneration.src,
-        iconAlt: commonIconSources.supportGeneration.alt,
-        source: 'fallback'
-      },
-      {
-        label: '충방전 현황',
-        path: '/dashboard/charge-discharge',
+        label: 'PCS현황',
+        path: '/monitoring/pcs',
+        matchPaths: ['/dashboard/charge-discharge'],
         iconSrc: commonIconSources.chargeDischarge.src,
         iconAlt: commonIconSources.chargeDischarge.alt,
         source: 'fallback'
       },
       {
-        label: '전력 소비 현황',
-        path: '/dashboard/power-consumption-status',
-        iconSrc: commonIconSources.powerConsumption.src,
-        iconAlt: commonIconSources.powerConsumption.alt,
+        label: '배터리현황',
+        path: '/monitoring/battery',
+        matchPaths: ['/dashboard/charge-discharge'],
+        iconSrc: commonIconSources.chargeDischarge.src,
+        iconAlt: commonIconSources.chargeDischarge.alt,
+        source: 'fallback'
+      },
+      {
+        label: '디젤1현황',
+        path: '/monitoring/diesel1',
+        matchPaths: ['/dashboard/support-generation'],
+        iconSrc: commonIconSources.supportGeneration.src,
+        iconAlt: commonIconSources.supportGeneration.alt,
+        source: 'fallback'
+      },
+      {
+        label: '디젤2현황',
+        path: '/monitoring/diesel2',
+        matchPaths: ['/dashboard/support-generation'],
+        iconSrc: commonIconSources.supportGeneration.src,
+        iconAlt: commonIconSources.supportGeneration.alt,
+        source: 'fallback'
+      },
+      {
+        label: 'GRID현황',
+        path: '/monitoring/grid',
+        matchPaths: ['/dashboard/base-generation'],
+        iconSrc: commonIconSources.baseGeneration.src,
+        iconAlt: commonIconSources.baseGeneration.alt,
+        source: 'fallback'
+      },
+      {
+        label: 'ESS현황',
+        path: '/monitoring/ess',
+        matchPaths: ['/dashboard/support-generation'],
+        iconSrc: commonIconSources.supportGeneration.src,
+        iconAlt: commonIconSources.supportGeneration.alt,
+        source: 'fallback'
+      },
+      {
+        label: '공조기현황',
+        path: '/monitoring/ac',
+        matchPaths: ['/dashboard/ac-status'],
+        iconSrc: commonIconSources.acStatus.src,
+        iconAlt: commonIconSources.acStatus.alt,
         source: 'fallback'
       }
     ]
@@ -71,29 +100,33 @@ export const productionNavigationGroups: NavigationGroup[] = [
     source: 'fallback',
     items: [
       {
-        label: 'GRID 기저발전 이력',
-        path: '/history/grid-base-generation-history',
+        label: 'GRID이력',
+        path: '/history/grid',
+        matchPaths: ['/history/grid-base-generation-history'],
         iconSrc: commonIconSources.gridHistory.src,
         iconAlt: commonIconSources.gridHistory.alt,
         source: 'fallback'
       },
       {
-        label: '보조발전 이력',
-        path: '/history/support-generation-history',
+        label: 'ESS이력',
+        path: '/history/ess',
+        matchPaths: ['/history/support-generation-history'],
         iconSrc: commonIconSources.supportHistory.src,
         iconAlt: commonIconSources.supportHistory.alt,
         source: 'fallback'
       },
       {
-        label: 'PCS 충방전 이력',
-        path: '/history/pcs-charge-discharge-history',
+        label: 'PCS이력',
+        path: '/history/pcs',
+        matchPaths: ['/history/pcs-charge-discharge-history'],
         iconSrc: commonIconSources.pcsHistory.src,
         iconAlt: commonIconSources.pcsHistory.alt,
         source: 'fallback'
       },
       {
         label: '전력소비 이력',
-        path: '/history/power-consumption-history',
+        path: '/history/power-consumption',
+        matchPaths: ['/history/power-consumption-history'],
         iconSrc: commonIconSources.powerHistory.src,
         iconAlt: commonIconSources.powerHistory.alt,
         source: 'fallback'
@@ -174,15 +207,17 @@ export const sampleNavigationGroups: NavigationGroup[] = [
   }
 ];
 
-// 백엔드 메뉴에 아직 없는 퍼블리싱 확인용 화면은 API 메뉴와 분리해 별도 보조 그룹으로 유지한다.
-export const supplementalNavigationGroups: NavigationGroup[] = productionNavigationGroups.map((group) => ({
-  ...group,
-  key: `supplemental-${group.key}`,
-  source: 'supplemental',
-  items: group.items.map((item) => ({
-    ...item,
-    source: 'supplemental'
-  }))
-}));
+// 백엔드 메뉴에 아직 없는 이력 화면만 API 메뉴와 분리해 별도 보조 그룹으로 유지한다.
+export const supplementalNavigationGroups: NavigationGroup[] = productionNavigationGroups
+  .filter((group) => group.key === 'operation-history')
+  .map((group) => ({
+    ...group,
+    key: `supplemental-${group.key}`,
+    source: 'supplemental',
+    items: group.items.map((item) => ({
+      ...item,
+      source: 'supplemental'
+    }))
+  }));
 
 export const navigationGroups: NavigationGroup[] = [...productionNavigationGroups, ...sampleNavigationGroups];

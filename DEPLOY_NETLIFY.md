@@ -7,9 +7,9 @@
 
 ## 배포 전에 알아둘 점
 - Netlify 수동 배포 URL은 기본적으로 공개 URL이다.
-- 링크를 받은 사람은 별도 로그인 없이 사이트에 접근할 수 있다.
-- 이 프로젝트는 퍼블리싱 mock 기준이라 로그인 화면이 보이며, mock 계정 흐름이 포함되어 있다.
-- 현재 mock 로그인 기준 계정은 `admin / admin`이다.
+- 링크를 받은 사람은 로그인 화면에서 실 API 인증 후 사이트에 접근한다.
+- 현재 확인 기준 계정은 `admin / Admin123!`이다.
+- Netlify 정적 배포에서는 `/api/*` 요청을 실제 API 서버로 프록시해야 하므로 `dist/_redirects`에 API rewrite가 포함되어 있어야 한다.
 
 ## 가장 빠른 배포 방법
 1. 로컬에서 프로젝트 폴더로 이동한다.
@@ -43,14 +43,15 @@ npm run build
 ```text
 외부 확인용 URL입니다.
 브라우저에서 바로 열리며, 로그인 화면 진입 후 확인 가능합니다.
-mock 로그인 계정: admin / admin
+확인 계정: admin / Admin123!
 ```
 
 ## 주의 사항
 - `src` 폴더나 프로젝트 루트 전체를 올리는 게 아니라 반드시 `dist` 폴더를 올린다.
 - 새 수정 사항이 생기면 다시 `npm run build` 후 새 `dist`를 다시 올려야 한다.
 - 현재 URL은 외부 공개 URL이므로 민감한 정보가 포함된 화면이나 실제 운영 데이터는 올리면 안 된다.
-- Netlify에 수동 업로드한 뒤 특정 하위 경로를 새로고침해도 열리도록 `dist/_redirects`가 포함되게 설정해 두었다.
+- Netlify에 수동 업로드한 뒤 특정 하위 경로를 새로고침해도 열리고 `/api/*`가 실제 API로 전달되도록 `dist/_redirects`가 포함되게 설정해 두었다.
+- `_redirects`의 `/api/* http://efd.iptime.org:2016/:splat 200!` 규칙이 빠지면 Netlify 배포본에서 `/api/auth/login`이 404로 떨어진다.
 
 ## 이 프로젝트 기준 체크리스트
 - [ ] `npm run build` 성공

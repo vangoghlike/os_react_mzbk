@@ -138,6 +138,10 @@ export function AppRouter() {
         <Route path="/monitoring/pcs" element={<PcsChargeDischargeStatusPage />} />
         <Route path="/monitoring/battery" element={<PcsChargeDischargeStatusPage />} />
         <Route path="/monitoring/ac" element={<AcStatusPage />} />
+        <Route path="/history/grid" element={<GridBaseGenerationHistoryPage />} />
+        <Route path="/history/ess" element={<SupportGenerationHistoryPage />} />
+        <Route path="/history/pcs" element={<PcsChargeDischargeHistoryPage />} />
+        <Route path="/history/power-consumption" element={<PowerConsumptionHistoryPage />} />
         <Route path="/history/grid-base-generation-history" element={<GridBaseGenerationHistoryPage />} />
         <Route path="/history/support-generation-history" element={<SupportGenerationHistoryPage />} />
         <Route path="/history/pcs-charge-discharge-history" element={<PcsChargeDischargeHistoryPage />} />
