@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthSession } from '../../features/auth/session/AuthSessionProvider';
 import { commonImageSources } from '../assets/images/commonImageSources';
@@ -25,7 +25,8 @@ function getPageName(pathname: string) {
     '/admin/code': '관리자 화면 / 코드 관리',
     '/admin/user': '관리자 화면 / 사용자 관리',
     '/admin/role': '관리자 화면 / 권한 관리',
-    '/system/popups': '시스템 샘플 / 팝업 샘플'
+    '/system/popups': '시스템 샘플 / 팝업 샘플',
+    '/search': '검색 결과'
   };
 
   return map[pathname] ?? 'EMS';
@@ -69,11 +70,21 @@ function SearchIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M4.25 4.25L11.75 11.75" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M11.75 4.25L4.25 11.75" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { session, logout } = useAuthSession();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -92,6 +103,29 @@ export function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProps) {
     });
   };
 
+  const handleSearchClose = () => {
+    setSearchOpen(false);
+    setSearchValue('');
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!searchOpen) {
+      setSearchOpen(true);
+      window.setTimeout(() => searchInputRef.current?.focus(), 0);
+      return;
+    }
+
+    const keyword = searchValue.trim();
+    if (!keyword) {
+      searchInputRef.current?.focus();
+      return;
+    }
+
+    navigate(`/search?q=${encodeURIComponent(keyword)}`);
+  };
+
   return (
     <header className="topbar">
       <div className="topbar__left">
@@ -108,20 +142,35 @@ export function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProps) {
       </div>
 
       <div className="topbar__right">
-        <form className={`topbar__search ${searchOpen ? 'is-open' : ''}`.trim()} role="search" onSubmit={(event) => event.preventDefault()}>
+        <form className={`topbar__search ${searchOpen ? 'is-open' : ''}`.trim()} role="search" onSubmit={handleSearchSubmit}>
           <input
             ref={searchInputRef}
             className="topbar__search-input"
             type="search"
             placeholder="검색어 입력"
             aria-label={`${getPageName(location.pathname)} 검색어`}
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
           />
+          {searchOpen && (
+            <button
+              type="button"
+              className="topbar__search-close"
+              aria-label="검색창 접기"
+              onClick={handleSearchClose}
+            >
+              <CloseIcon />
+            </button>
+          )}
           <button
-            type="button"
+            type={searchOpen ? 'submit' : 'button'}
             className="topbar__search-button"
             aria-label={`${getPageName(location.pathname)} 검색`}
             aria-expanded={searchOpen}
-            onClick={handleSearchToggle}
+            onClick={() => {
+              if (searchOpen) return;
+              handleSearchToggle();
+            }}
           >
             <SearchIcon />
           </button>
@@ -153,7 +202,7 @@ export function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProps) {
               role="menuitem"
               onClick={() => {
                 setProfileOpen(false);
-                navigate('/admin/master');
+                navigate('/system/users');
               }}
             >
               관리자 화면

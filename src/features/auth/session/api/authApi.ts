@@ -62,16 +62,17 @@ export const authApi = {
     return apiClient<LoginResponseDto>('/auth/login', {
       method: 'POST',
       auth: false,
-      body: request
+      body: request,
+      operationName: '로그인'
     });
   },
   me() {
-    return apiClient<MeResponseDto>('/me');
+    return apiClient<MeResponseDto>('/me', { operationName: '내 계정 정보 조회' });
   },
   menus() {
-    return apiClient<MyMenuResponseDto[]>('/me/menus');
+    return apiClient<MyMenuResponseDto[]>('/me/menus', { operationName: '내 메뉴 조회' });
   },
   logout() {
-    return apiClient<void>('/auth/logout', { method: 'POST' });
+    return apiClient<void>('/auth/logout', { method: 'POST', operationName: '로그아웃' });
   }
 };

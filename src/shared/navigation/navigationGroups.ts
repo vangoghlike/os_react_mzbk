@@ -1,10 +1,12 @@
+import { commonIconSources } from '../assets/icons/commonIconSources';
+
 export type NavigationItem = {
   label: string;
   path: string;
   matchPaths?: string[];
   iconSrc: string;
   iconAlt: string;
-  source?: 'api' | 'fallback' | 'sample' | 'supplemental';
+  source?: 'api' | 'fallback' | 'sample';
 };
 
 export type NavigationGroup = {
@@ -13,10 +15,8 @@ export type NavigationGroup = {
   iconSrc: string;
   iconAlt: string;
   items: NavigationItem[];
-  source?: 'api' | 'fallback' | 'sample' | 'supplemental';
+  source?: 'api' | 'fallback' | 'sample';
 };
-
-import { commonIconSources } from '../assets/icons/commonIconSources';
 
 export const productionNavigationGroups: NavigationGroup[] = [
   {
@@ -124,6 +124,34 @@ export const productionNavigationGroups: NavigationGroup[] = [
         source: 'fallback'
       },
       {
+        label: '배터리이력',
+        path: '/history/battery',
+        iconSrc: commonIconSources.chargeDischarge.src,
+        iconAlt: commonIconSources.chargeDischarge.alt,
+        source: 'fallback'
+      },
+      {
+        label: '디젤1이력',
+        path: '/history/diesel1',
+        iconSrc: commonIconSources.supportHistory.src,
+        iconAlt: commonIconSources.supportHistory.alt,
+        source: 'fallback'
+      },
+      {
+        label: '디젤2이력',
+        path: '/history/diesel2',
+        iconSrc: commonIconSources.supportHistory.src,
+        iconAlt: commonIconSources.supportHistory.alt,
+        source: 'fallback'
+      },
+      {
+        label: '공조기이력',
+        path: '/history/ac',
+        iconSrc: commonIconSources.acStatus.src,
+        iconAlt: commonIconSources.acStatus.alt,
+        source: 'fallback'
+      },
+      {
         label: '전력소비 이력',
         path: '/history/power-consumption',
         matchPaths: ['/history/power-consumption-history'],
@@ -138,7 +166,7 @@ export const productionNavigationGroups: NavigationGroup[] = [
 export const sampleNavigationGroups: NavigationGroup[] = [
   {
     key: 'operation-report',
-    label: '운영 리포트',
+    label: '__보고서',
     iconSrc: commonIconSources.operationReport.src,
     iconAlt: commonIconSources.operationReport.alt,
     source: 'sample',
@@ -154,7 +182,7 @@ export const sampleNavigationGroups: NavigationGroup[] = [
   },
   {
     key: 'admin-management',
-    label: '관리자 화면',
+    label: '__관리자 화면',
     iconSrc: commonIconSources.adminManagement.src,
     iconAlt: commonIconSources.adminManagement.alt,
     source: 'sample',
@@ -191,13 +219,13 @@ export const sampleNavigationGroups: NavigationGroup[] = [
   },
   {
     key: 'system-samples',
-    label: '시스템 샘플',
+    label: '__시스템 샘플',
     iconSrc: commonIconSources.systemSamples.src,
     iconAlt: commonIconSources.systemSamples.alt,
     source: 'sample',
     items: [
       {
-        label: '팝업 샘플',
+        label: '등록 팝업 샘플',
         path: '/system/popups',
         iconSrc: commonIconSources.popupSamples.src,
         iconAlt: commonIconSources.popupSamples.alt,
@@ -206,18 +234,5 @@ export const sampleNavigationGroups: NavigationGroup[] = [
     ]
   }
 ];
-
-// 백엔드 메뉴에 아직 없는 이력 화면만 API 메뉴와 분리해 별도 보조 그룹으로 유지한다.
-export const supplementalNavigationGroups: NavigationGroup[] = productionNavigationGroups
-  .filter((group) => group.key === 'operation-history')
-  .map((group) => ({
-    ...group,
-    key: `supplemental-${group.key}`,
-    source: 'supplemental',
-    items: group.items.map((item) => ({
-      ...item,
-      source: 'supplemental'
-    }))
-  }));
 
 export const navigationGroups: NavigationGroup[] = [...productionNavigationGroups, ...sampleNavigationGroups];

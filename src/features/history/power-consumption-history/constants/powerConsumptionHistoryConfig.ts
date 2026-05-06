@@ -6,5 +6,7 @@ export const powerConsumptionHistoryMetrics: readonly PowerConsumptionHistoryMet
 export const powerConsumptionHistoryDefaultCriteria = {
   mode: 'Month' as PowerConsumptionHistoryMode,
   startDate: '2026-05-01',
-  endDate: '2026-05-02'
+  endDate: '2026-05-31',
+  year: '2026',
+  month: '2026-05'
 };

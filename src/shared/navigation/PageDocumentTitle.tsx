@@ -10,9 +10,9 @@ type PageDocumentTitleProps = {
 };
 
 /*
- * 필요: 브라우저 탭 제목에 현재 화면명과 사이트명을 함께 표시한다.
+ * 필요: 브라우저 탭 제목에 현재 페이지명과 사이트명을 함께 표시한다.
  * 연결: AppRouter, useNavigationPageTitle, 백엔드 메뉴명.
- * 설명: 화면명은 메뉴 API와 라우트 기본값을 먼저 보고, 최종 형식은 "페이지명 | 사이트명"으로 고정한다.
+ * 설명: 최종 형식은 "페이지명 | 사이트명"으로 고정한다.
  */
 export function PageDocumentTitle({ title, preferMenuTitle = true }: PageDocumentTitleProps) {
   const location = useLocation();

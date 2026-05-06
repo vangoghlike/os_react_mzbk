@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
 import { gridBaseGenerationHistoryDefaultCriteria } from '../constants/gridBaseGenerationHistoryConfig';
 import { GridBaseGenerationHistoryResultSection } from '../sections/GridBaseGenerationHistoryResultSection';
@@ -15,17 +15,18 @@ import '../../shared/HistoryPageLayout.css';
  */
 export function GridBaseGenerationHistoryPage() {
   const [searchCriteria, setSearchCriteria] =
-    useState<HistorySearchCriteria<GridBaseGenerationHistoryMode>>(gridBaseGenerationHistoryDefaultCriteria);
+    useState<SearchConditionCriteria<GridBaseGenerationHistoryMode>>(gridBaseGenerationHistoryDefaultCriteria);
   const [searchedAt, setSearchedAt] = useState('조회 전');
 
-  const handleSearch = (nextCriteria: HistorySearchCriteria<GridBaseGenerationHistoryMode>) => {
+  const handleSearch = (nextCriteria: SearchConditionCriteria<GridBaseGenerationHistoryMode>) => {
     setSearchCriteria(nextCriteria);
     setSearchedAt(new Date().toLocaleTimeString('ko-KR', { hour12: false }));
   };
 
   return (
     <div className="page-stack history-page">
-      <PageHeading title="GRID 기저발전 이력" actions={<GridBaseGenerationHistorySearchSection onSearch={handleSearch} />} />
+      <PageHeading title="GRID 기저발전 이력" />
+      <GridBaseGenerationHistorySearchSection onSearch={handleSearch} />
       <GridBaseGenerationHistoryResultSection searchCriteria={searchCriteria} searchedAt={searchedAt} />
     </div>
   );

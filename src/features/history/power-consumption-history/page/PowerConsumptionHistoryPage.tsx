@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
 import { powerConsumptionHistoryDefaultCriteria } from '../constants/powerConsumptionHistoryConfig';
 import { PowerConsumptionHistoryResultSection } from '../sections/PowerConsumptionHistoryResultSection';
@@ -15,17 +15,18 @@ import '../../shared/HistoryPageLayout.css';
  */
 export function PowerConsumptionHistoryPage() {
   const [searchCriteria, setSearchCriteria] =
-    useState<HistorySearchCriteria<PowerConsumptionHistoryMode>>(powerConsumptionHistoryDefaultCriteria);
+    useState<SearchConditionCriteria<PowerConsumptionHistoryMode>>(powerConsumptionHistoryDefaultCriteria);
   const [searchedAt, setSearchedAt] = useState('조회 전');
 
-  const handleSearch = (nextCriteria: HistorySearchCriteria<PowerConsumptionHistoryMode>) => {
+  const handleSearch = (nextCriteria: SearchConditionCriteria<PowerConsumptionHistoryMode>) => {
     setSearchCriteria(nextCriteria);
     setSearchedAt(new Date().toLocaleTimeString('ko-KR', { hour12: false }));
   };
 
   return (
     <div className="page-stack history-page">
-      <PageHeading title="전력소비 이력" actions={<PowerConsumptionHistorySearchSection onSearch={handleSearch} />} />
+      <PageHeading title="전력소비 이력" />
+      <PowerConsumptionHistorySearchSection onSearch={handleSearch} />
       <PowerConsumptionHistoryResultSection searchCriteria={searchCriteria} searchedAt={searchedAt} />
     </div>
   );

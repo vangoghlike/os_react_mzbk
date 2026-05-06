@@ -56,18 +56,26 @@ const PowerConsumptionHistoryPage = lazy(() =>
     default: module.PowerConsumptionHistoryPage
   }))
 );
+const MonitoringResourceHistoryPage = lazy(() =>
+  import('../features/history/monitoring-resource-history/page/MonitoringResourceHistoryPage').then((module) => ({
+    default: module.MonitoringResourceHistoryPage
+  }))
+);
 const OperationReportPage = lazy(() => import('../pages/report/OperationReportPage').then((module) => ({ default: module.OperationReportPage })));
 const MasterManagementPage = lazy(() => import('../pages/admin/MasterManagementPage').then((module) => ({ default: module.MasterManagementPage })));
 const CodeManagementPage = lazy(() => import('../pages/admin/CodeManagementPage').then((module) => ({ default: module.CodeManagementPage })));
 const UserManagementPage = lazy(() => import('../pages/admin/UserManagementPage').then((module) => ({ default: module.UserManagementPage })));
 const RoleManagementPage = lazy(() => import('../pages/admin/RoleManagementPage').then((module) => ({ default: module.RoleManagementPage })));
 const PopupSamplesPage = lazy(() => import('../pages/system/PopupSamplesPage').then((module) => ({ default: module.PopupSamplesPage })));
+const SearchResultsPage = lazy(() => import('../pages/search/SearchResultsPage').then((module) => ({ default: module.SearchResultsPage })));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+
+const DEFAULT_DASHBOARD_PATH = '/monitoring/dashboard/plant';
 
 function AuthOutlet() {
   const { isAuthenticated, isInitializing } = useAuthSession();
   const location = useLocation();
-  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard/base-generation';
+  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? DEFAULT_DASHBOARD_PATH;
 
   if (isInitializing) {
     return <PageLoadingFallback label="로그인 상태를 확인하는 중입니다." />;
@@ -123,7 +131,7 @@ export function AppRouter() {
       </Route>
 
       <Route element={<DashboardOutlet />}>
-        <Route path="/" element={<Navigate to="/dashboard/base-generation" replace />} />
+        <Route path="/" element={<Navigate to={DEFAULT_DASHBOARD_PATH} replace />} />
         <Route path="/dashboard/plant-operation-status" element={<PlantOperationStatusPage />} />
         <Route path="/dashboard/base-generation" element={<BaseGenerationPage />} />
         <Route path="/dashboard/support-generation" element={<SupportGenerationStatusPage />} />
@@ -131,22 +139,42 @@ export function AppRouter() {
         <Route path="/dashboard/power-consumption-status" element={<PowerConsumptionStatusPage />} />
         <Route path="/dashboard/ac-status" element={<AcStatusPage />} />
         <Route path="/monitoring/dashboard" element={<PlantOperationStatusPage />} />
+        <Route path="/monitoring/dashboard/plant" element={<PlantOperationStatusPage />} />
+        <Route path="/monitoring/dashboard/total" element={<PlantOperationStatusPage />} />
         <Route path="/monitoring/grid" element={<BaseGenerationPage />} />
+        <Route path="/monitoring/base/plant" element={<BaseGenerationPage />} />
+        <Route path="/monitoring/base/total" element={<BaseGenerationPage />} />
         <Route path="/monitoring/ess" element={<SupportGenerationStatusPage />} />
+        <Route path="/monitoring/assist" element={<SupportGenerationStatusPage />} />
         <Route path="/monitoring/diesel1" element={<SupportGenerationStatusPage />} />
         <Route path="/monitoring/diesel2" element={<SupportGenerationStatusPage />} />
         <Route path="/monitoring/pcs" element={<PcsChargeDischargeStatusPage />} />
         <Route path="/monitoring/battery" element={<PcsChargeDischargeStatusPage />} />
+        <Route path="/monitoring/standby" element={<PcsChargeDischargeStatusPage />} />
         <Route path="/monitoring/ac" element={<AcStatusPage />} />
+        <Route path="/monitoring/dispatch" element={<PowerConsumptionStatusPage />} />
+        <Route path="/analysis/base/plant/history" element={<GridBaseGenerationHistoryPage />} />
+        <Route path="/analysis/base/total/history" element={<GridBaseGenerationHistoryPage />} />
+        <Route path="/analysis/assist/history" element={<SupportGenerationHistoryPage />} />
+        <Route path="/analysis/standby/history" element={<PcsChargeDischargeHistoryPage />} />
+        <Route path="/analysis/dispatch/history" element={<PowerConsumptionHistoryPage />} />
         <Route path="/history/grid" element={<GridBaseGenerationHistoryPage />} />
         <Route path="/history/ess" element={<SupportGenerationHistoryPage />} />
         <Route path="/history/pcs" element={<PcsChargeDischargeHistoryPage />} />
+        <Route path="/history/battery" element={<PcsChargeDischargeHistoryPage />} />
+        <Route path="/history/diesel1" element={<SupportGenerationHistoryPage />} />
+        <Route path="/history/diesel2" element={<SupportGenerationHistoryPage />} />
+        <Route path="/history/ac" element={<MonitoringResourceHistoryPage />} />
         <Route path="/history/power-consumption" element={<PowerConsumptionHistoryPage />} />
         <Route path="/history/grid-base-generation-history" element={<GridBaseGenerationHistoryPage />} />
         <Route path="/history/support-generation-history" element={<SupportGenerationHistoryPage />} />
         <Route path="/history/pcs-charge-discharge-history" element={<PcsChargeDischargeHistoryPage />} />
         <Route path="/history/power-consumption-history" element={<PowerConsumptionHistoryPage />} />
         <Route path="/reports/operation" element={<OperationReportPage />} />
+        <Route path="/report/daily" element={<OperationReportPage />} />
+        <Route path="/report/weekly" element={<OperationReportPage />} />
+        <Route path="/report/monthly" element={<OperationReportPage />} />
+        <Route path="/report/yearly" element={<OperationReportPage />} />
         <Route path="/report/pcs" element={<OperationReportPage />} />
         <Route path="/report/battery" element={<OperationReportPage />} />
         <Route path="/report/diesel1" element={<OperationReportPage />} />
@@ -169,6 +197,7 @@ export function AppRouter() {
         <Route path="/system/users" element={<UserManagementPage />} />
         <Route path="/system/codes" element={<CodeManagementPage />} />
         <Route path="/system/popups" element={<PopupSamplesPage />} />
+        <Route path="/search" element={<SearchResultsPage />} />
       </Route>
 
       <Route

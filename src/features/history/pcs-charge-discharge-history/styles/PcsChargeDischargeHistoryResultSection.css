@@ -5,9 +5,26 @@
   min-height: 700px;
 }
 
-.pcs-charge-history-result__table {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 16px;
+@media (max-width: 720px) {
+  .pcs-charge-history-result .card__body {
+    gap: 18px;
+    min-height: auto;
+  }
+
+  .pcs-charge-history-result .chart {
+    height: 330px !important;
+  }
+
+  .pcs-charge-history-result__table-card .table {
+    min-width: max(100%, 680px) !important;
+    table-layout: fixed;
+  }
+
+  .pcs-charge-history-result__table-card .table thead th,
+  .pcs-charge-history-result__table-card .table tbody td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+    line-height: 1.35;
+  }
 }

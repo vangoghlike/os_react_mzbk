@@ -7,6 +7,8 @@ import { loginScreenText } from '../constants/loginScreenText';
 import { LoginForm } from '../sections/LoginForm';
 import '../styles/LoginPage.css';
 
+const DEFAULT_DASHBOARD_PATH = '/dashboard/plant-operation-status';
+
 function getLoginErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
     if (error.status === 401 || error.code === 'C002' || error.code === 'C999') {
@@ -32,7 +34,7 @@ export function LoginPage() {
   const [autoLogin, setAutoLogin] = useState(false);
   const [loginErrorMessage, setLoginErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard/base-generation';
+  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? DEFAULT_DASHBOARD_PATH;
 
   return (
     <section className="login-shell">

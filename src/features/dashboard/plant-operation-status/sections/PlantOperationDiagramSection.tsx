@@ -1,5 +1,5 @@
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
 import { plantOperationCanvasLayout, plantOperationConnectionRules, plantOperationTopologyPlacements } from '../constants/plantOperationTopologyLayout';
@@ -17,6 +17,7 @@ import type {
   PlantOperationPowerPanel,
   PlantOperationResolvedCanvasLayout,
   PlantOperationStatusData,
+  PlantOperationTargetOption,
   PlantOperationTopologyData,
   PlantOperationTopologyTableBlock
 } from '../types/plantOperationStatus';
@@ -27,6 +28,9 @@ type PlantOperationTopologyContent = Omit<PlantOperationTopologyData, 'layout'>;
 
 type PlantOperationDiagramSectionProps = {
   data: PlantOperationStatusData | null;
+  targetOptions: PlantOperationTargetOption[];
+  selectedTargetId: string;
+  onTargetChange: (targetId: string) => void;
   isLoading: boolean;
   errorMessage: string;
 };
@@ -229,9 +233,44 @@ function getTopologyNodeMap(topology: PlantOperationTopologyContent) {
 
 function NodePill({ label, className = '', style }: { label: string; className?: string; style?: CSSProperties }) {
   return (
-    <span className={`plant-operation-node-pill ${className}`.trim()} style={style}>
+    <span className={`plant-operation-node-pill ${className}`.trim()} style={style} title={label}>
       {label}
     </span>
+  );
+}
+
+/*
+ * 필요: 발전소 운영현황 카드 안에서 API targetList 기반 조회 대상을 선택한다.
+ * 연결: PlantOperationStatusPage, plantOperationStatusAdapter.
+ * 설명: 현재는 선택 상태만 화면에 유지하고, detail API 연결 시 selectedTargetId를 조회 인자로 넘긴다.
+ * 수정: 셀렉트 위치와 디자인은 PlantOperationDiagramSection.css의 card action 영역에서 조정한다.
+ */
+function PlantOperationTargetSelect({
+  options,
+  selectedTargetId,
+  onChange
+}: {
+  options: PlantOperationTargetOption[];
+  selectedTargetId: string;
+  onChange: (targetId: string) => void;
+}) {
+  if (!options.length) {
+    return null;
+  }
+
+  const value = selectedTargetId || options[0].targetId;
+
+  return (
+    <label className="plant-operation-card__target-field">
+      <span>조회 대상</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} aria-label="발전소 운영현황 조회 대상">
+        {options.map((option) => (
+          <option key={option.targetId} value={option.targetId}>
+            {option.targetName}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -242,16 +281,22 @@ function BankStatusCard({ bank }: { bank: PlantOperationBankStatus }) {
         <thead>
           <tr>
             <th aria-label="구분" />
-            <th scope="col">Status</th>
-            <th scope="col">D.Accm</th>
+            <th scope="col" title="Status">
+              Status
+            </th>
+            <th scope="col" title="D.Accm">
+              D.Accm
+            </th>
           </tr>
         </thead>
         <tbody>
           {bank.rows.map((row) => (
             <tr key={`${bank.id}-${row.label}`}>
-              <th scope="row">{row.label}</th>
-              <td>{row.status}</td>
-              <td>{row.dAccm}</td>
+              <th scope="row" title={row.label}>
+                {row.label}
+              </th>
+              <td title={row.status}>{row.status}</td>
+              <td title={row.dAccm}>{row.dAccm}</td>
             </tr>
           ))}
         </tbody>
@@ -262,13 +307,17 @@ function BankStatusCard({ bank }: { bank: PlantOperationBankStatus }) {
 }
 
 function SimpleStatusPanel({ panel, className = '', style }: { panel: PlantOperationTopologyTableBlock; className?: string; style?: CSSProperties }) {
+  const tableStyle = { ...style, '--topology-row-count': panel.rows.length } as PlantOperationStyle;
+
   return (
-    <table className={`plant-operation-simple-table ${className}`.trim()} style={style} aria-label={`${panel.title} 상태`}>
+    <table className={`plant-operation-simple-table ${className}`.trim()} style={tableStyle} aria-label={`${panel.title} 상태`}>
       <tbody>
         {panel.rows.map((row) => (
           <tr key={`${panel.id}-${row.label}`}>
-            <th scope="row">{row.label}</th>
-            <td>{row.value}</td>
+            <th scope="row" title={row.label}>
+              {row.label}
+            </th>
+            <td title={row.value}>{row.value}</td>
           </tr>
         ))}
       </tbody>
@@ -277,19 +326,23 @@ function SimpleStatusPanel({ panel, className = '', style }: { panel: PlantOpera
 }
 
 function PowerMetricTable({ panel, className = '', style }: { panel: PlantOperationPowerPanel; className?: string; style?: CSSProperties }) {
+  const tableStyle = { ...style, '--topology-row-count': panel.rows.length } as PlantOperationStyle;
+
   return (
-    <table className={`plant-operation-power-table ${className}`.trim()} style={style} aria-label={`${panel.nodeLabel} 계측값`}>
+    <table className={`plant-operation-power-table ${className}`.trim()} style={tableStyle} aria-label={`${panel.nodeLabel} 계측값`}>
       <tbody>
         {panel.rows.map((row, index) => (
           <tr key={`${panel.id}-${row.label}`}>
-            <th scope="row">{row.label}</th>
-            <td>{row.value}</td>
+            <th scope="row" title={row.label}>
+              {row.label}
+            </th>
+            <td title={row.value}>{row.value}</td>
             {index === 0 && (
               <>
                 <th className="plant-operation-power-table__pf-label" rowSpan={panel.rows.length} scope="row">
                   PF(%)
                 </th>
-                <td className="plant-operation-power-table__pf-value" rowSpan={panel.rows.length}>
+                <td className="plant-operation-power-table__pf-value" rowSpan={panel.rows.length} title={panel.pf}>
                   {panel.pf}
                 </td>
               </>
@@ -302,13 +355,17 @@ function PowerMetricTable({ panel, className = '', style }: { panel: PlantOperat
 }
 
 function PcsStatusTable({ panel, style }: { panel: PlantOperationPcsPanel; style?: CSSProperties }) {
+  const tableStyle = { ...style, '--topology-row-count': panel.rows.length } as PlantOperationStyle;
+
   return (
-    <table className="plant-operation-pcs-table" style={style} aria-label={`${panel.nodeLabel} 상태`}>
+    <table className="plant-operation-pcs-table" style={tableStyle} aria-label={`${panel.nodeLabel} 상태`}>
       <tbody>
         {panel.rows.map((row) => (
           <tr key={`${panel.id}-${row.label}`}>
-            <th scope="row">{row.label}</th>
-            <td>{row.value}</td>
+            <th scope="row" title={row.label}>
+              {row.label}
+            </th>
+            <td title={row.value}>{row.value}</td>
           </tr>
         ))}
       </tbody>
@@ -317,17 +374,19 @@ function PcsStatusTable({ panel, style }: { panel: PlantOperationPcsPanel; style
 }
 
 function BatteryRackTable({ panel, style }: { panel: PlantOperationBatteryPanel; style?: CSSProperties }) {
+  const tableStyle = { ...style, '--topology-row-count': 3 } as PlantOperationStyle;
+
   return (
-    <table className="plant-operation-battery-table" style={style} aria-label={`${panel.nodeLabel} 상태`}>
+    <table className="plant-operation-battery-table" style={tableStyle} aria-label={`${panel.nodeLabel} 상태`}>
       <thead>
         <tr>
           {panel.summary.map((item) => (
-            <th key={`${panel.id}-${item.label}`} rowSpan={2} scope="col">
+            <th key={`${panel.id}-${item.label}`} rowSpan={2} scope="col" title={item.label}>
               {item.label}
             </th>
           ))}
           {panel.groups.map((group) => (
-            <th key={`${panel.id}-${group.title}`} colSpan={group.metrics.length} scope="colgroup">
+            <th key={`${panel.id}-${group.title}`} colSpan={group.metrics.length} scope="colgroup" title={group.title}>
               {group.title}
             </th>
           ))}
@@ -335,7 +394,7 @@ function BatteryRackTable({ panel, style }: { panel: PlantOperationBatteryPanel;
         <tr>
           {panel.groups.flatMap((group) =>
             group.metrics.map((metric) => (
-              <th key={`${panel.id}-${group.title}-${metric.label}`} scope="col">
+              <th key={`${panel.id}-${group.title}-${metric.label}`} scope="col" title={metric.label}>
                 {metric.label}
               </th>
             ))
@@ -345,11 +404,15 @@ function BatteryRackTable({ panel, style }: { panel: PlantOperationBatteryPanel;
       <tbody>
         <tr>
           {panel.summary.map((item) => (
-            <td key={`${panel.id}-value-${item.label}`}>{item.value}</td>
+            <td key={`${panel.id}-value-${item.label}`} title={item.value}>
+              {item.value}
+            </td>
           ))}
           {panel.groups.flatMap((group) =>
             group.metrics.map((metric) => (
-              <td key={`${panel.id}-value-${group.title}-${metric.label}`}>{metric.value}</td>
+              <td key={`${panel.id}-value-${group.title}-${metric.label}`} title={metric.value}>
+                {metric.value}
+              </td>
             ))
           )}
         </tr>
@@ -359,13 +422,15 @@ function BatteryRackTable({ panel, style }: { panel: PlantOperationBatteryPanel;
 }
 
 function GeneratorBranch({ generator }: { generator: PlantOperationGeneratorPanel }) {
+  const tableStyle = { ...getGridItemStyle(generator.tableLayout), '--topology-row-count': generator.rows.length } as PlantOperationStyle;
+
   return (
     <>
       <NodePill label={generator.agcLabel} className="plant-operation-node-pill--generator-agc" style={getGridItemStyle(generator.agcLayout)} />
       <SimpleStatusPanel
         panel={{ id: generator.id, title: generator.equipmentLabel, rows: generator.rows, layout: generator.tableLayout }}
         className="plant-operation-generator-table"
-        style={getGridItemStyle(generator.tableLayout)}
+        style={tableStyle}
       />
       <NodePill label={generator.equipmentLabel} className="plant-operation-node-pill--generator" style={getGridItemStyle(generator.equipmentLayout)} />
     </>
@@ -447,19 +512,23 @@ function renderChainLine(rule: Extract<PlantOperationConnectionRule, { kind: 'ch
 }
 
 function TopologyLines({ topology }: { topology: PlantOperationTopologyData }) {
-  const nodeMap = getTopologyNodeMap(topology);
-  const size = getLayoutSize(topology.layout);
-  const lines = topology.connections.flatMap((rule) => {
-    if (rule.kind === 'collector') {
-      return renderCollectorLine(rule, topology, nodeMap);
-    }
+  const { lines, size } = useMemo(() => {
+    const nodeMap = getTopologyNodeMap(topology);
+    const layoutSize = getLayoutSize(topology.layout);
+    const topologyLines = topology.connections.flatMap((rule) => {
+      if (rule.kind === 'collector') {
+        return renderCollectorLine(rule, topology, nodeMap);
+      }
 
-    if (rule.kind === 'split') {
-      return renderSplitLine(rule, topology, nodeMap);
-    }
+      if (rule.kind === 'split') {
+        return renderSplitLine(rule, topology, nodeMap);
+      }
 
-    return renderChainLine(rule, topology, nodeMap);
-  });
+      return renderChainLine(rule, topology, nodeMap);
+    });
+
+    return { lines: topologyLines, size: layoutSize };
+  }, [topology]);
 
   return (
     <svg className="plant-operation-lines" width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`} aria-hidden="true">
@@ -474,30 +543,39 @@ function TopologyLines({ topology }: { topology: PlantOperationTopologyData }) {
  * 설명: API adapter가 만든 ViewModel과 배치 기준을 조합하고, 실제 판 크기는 배치된 요소와 선 규칙에서 계산한다.
  * 수정: 데이터 매핑은 adapter, 기준점과 선은 constants, 표현 스타일은 CSS에서 조정한다.
  */
-export function PlantOperationDiagramSection({ data, isLoading, errorMessage }: PlantOperationDiagramSectionProps) {
+export function PlantOperationDiagramSection({
+  data,
+  targetOptions,
+  selectedTargetId,
+  onTargetChange,
+  isLoading,
+  errorMessage
+}: PlantOperationDiagramSectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
+  const topology = useMemo(() => (data ? createPlantOperationTopology(data) : undefined), [data]);
+  const boardStyle = useMemo(() => (topology ? getBoardStyle(topology.layout) : undefined), [topology]);
+  const targetSelect = targetOptions.length ? (
+    <PlantOperationTargetSelect options={targetOptions} selectedTargetId={selectedTargetId} onChange={onTargetChange} />
+  ) : undefined;
 
   if (isLoading) {
     return (
-      <PageCard title="발전설비 운영 현황" className="plant-operation-card">
+      <PageCard title="발전설비 운영 현황" actions={targetSelect} className="plant-operation-card">
         <PageDataLoadingFallback title="발전소 운영현황" />
       </PageCard>
     );
   }
 
-  if (errorMessage || !data) {
+  if (errorMessage || !data || !topology || !boardStyle) {
     return (
-      <PageCard title="발전설비 운영 현황" className="plant-operation-card">
+      <PageCard title="발전설비 운영 현황" actions={targetSelect} className="plant-operation-card">
         <div className="plant-operation-status-message plant-operation-status-message--error" role="alert">
           {errorMessage || '발전소 운영현황 데이터가 없습니다.'}
         </div>
       </PageCard>
     );
   }
-
-  const topology = createPlantOperationTopology(data);
-  const boardStyle = getBoardStyle(topology.layout);
 
   function isInteractiveTarget(target: EventTarget | null) {
     return target instanceof Element && Boolean(target.closest('table, .plant-operation-node-pill, button, a, input, select, textarea'));
@@ -550,7 +628,7 @@ export function PlantOperationDiagramSection({ data, isLoading, errorMessage }: 
   }
 
   return (
-    <PageCard title="발전설비 운영 현황" className="plant-operation-card">
+    <PageCard title="발전설비 운영 현황" actions={targetSelect} className="plant-operation-card">
       <div
         ref={scrollRef}
         className="plant-operation-scroll"

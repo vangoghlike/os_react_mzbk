@@ -1,6 +1,7 @@
 import type { TableHeaderCell, TableRow } from '../../../../shared/types/table';
 import type { BaseGenerationPageData } from '../types/baseGeneration';
 import type { BaseGenerationStatusResponse, GridStatusResponseDto } from '../api/baseGenerationApi';
+import type { MonitoringDetailDto, MonitoringTargetDto } from '../../../../shared/api/monitoringApi';
 
 type NumberLike = string | number | null | undefined;
 
@@ -189,17 +190,53 @@ function createInverterTableRows(rows: GridStatusResponseDto[]): TableRow[] {
   ]);
 }
 
+function createTargetOptions(targets: MonitoringTargetDto[]) {
+  return targets
+    .map((target, index) => {
+      const value = getRawValue(target.targetId) || `target-${index + 1}`;
+      const label = getRawValue(target.targetName) || `대상 #${index + 1}`;
+
+      return { label, value };
+    })
+    .filter((option) => option.value);
+}
+
+function createDetailTableRows(details: MonitoringDetailDto[]): TableRow[] {
+  return details.map((detail) => [
+    getTimeLabel({ esmtOperTime: detail.operTime }),
+    formatNumber(detail.detailValue1),
+    formatNumber(detail.detailValue2),
+    formatNumber(detail.detailValue3),
+    formatNumber(detail.detailValue1),
+    formatNumber(detail.detailValue2),
+    formatNumber(detail.detailValue3),
+    formatNumber(detail.detailValue4),
+    formatNumber(detail.detailValue2),
+    formatNumber(detail.detailValue3),
+    formatNumber(detail.detailValue4),
+    formatNumber(detail.detailValue1),
+    formatNumber(detail.detailValue2),
+    formatNumber(detail.detailValue3),
+    formatNumber(detail.detailValue4),
+    formatNumber(detail.detailValue5),
+    formatNumber(detail.detailValue5),
+    formatNumber(detail.detailValue5)
+  ]);
+}
+
 /*
  * 필요: GRID API DTO를 기저발전 공통 화면 ViewModel로 변환한다.
  * 연결: useBaseGenerationStatus, BaseGenerationSummarySection, BaseGenerationTableSection.
- * 설명: 컴포넌트에는 API 필드명과 fallback 규칙을 두지 않고, 여기서 표시값과 차트 series를 만든다.
- * 수정: 기저발전 API 필드 의미가 바뀌면 이 adapter의 매핑만 먼저 조정한다.
+ * 설명: 컴포넌트에는 API 필드명과 fallback 규칙을 두지 않고, targetList/detail 값을 화면 계약으로 바꾼다.
+ * 수정: 기저발전 API 필드 의미나 상세 표 매핑이 바뀌면 이 adapter의 매핑만 먼저 조정한다.
  */
 export function toBaseGenerationPageData(response: BaseGenerationStatusResponse): BaseGenerationPageData {
   const rows = getDisplayRows(response);
   const latest = response.latest ?? rows.at(-1) ?? null;
   const activeTotal = latest?.baAtpTot;
   const reactiveTotal = latest?.baRtpTot;
+  const targetOptions = createTargetOptions(response.targetList);
+  const detailRows = response.detailList.length ? createDetailTableRows(response.detailList) : createInverterTableRows(rows);
 
   return {
     summary: {
@@ -231,11 +268,13 @@ export function toBaseGenerationPageData(response: BaseGenerationStatusResponse)
         ariaLabel: '기저발전 GRID 상세 내역',
         minWidth: 1880,
         defaultExpanded: true,
-        defaultEquipmentValue: 'grid-1',
-        equipmentOptions: [{ label: 'GRID #1', value: 'grid-1' }],
+        defaultEquipmentValue: response.selectedTargetId || targetOptions[0]?.value || 'grid-1',
+        equipmentOptions: targetOptions.length ? targetOptions : [{ label: 'GRID #1', value: 'grid-1' }],
         headerRows: inverterTableHeaderRows,
-        rows: createInverterTableRows(rows)
+        rows: detailRows
       }
-    }
+    },
+    targetOptions,
+    selectedTargetId: response.selectedTargetId
   };
 }

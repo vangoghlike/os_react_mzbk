@@ -1,5 +1,5 @@
 .sidebar {
-  width: 235px;
+  width: calc(235px + 36px);
   height: 100dvh;
   background: var(--panel-gray-bg);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -167,6 +167,7 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  min-width: 0;
 }
 
 .sidebar__group-icon {
@@ -220,7 +221,7 @@
   border-radius: 4px;
   color: var(--text-layout-soft);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0;
   padding: 10px 6px;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -230,7 +231,11 @@
 
 .sidebar__item span,
 .sidebar__group-label span {
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .sidebar__item:hover {
@@ -297,7 +302,7 @@
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 50;
-    width: 235px;
+    width: calc(235px + 36px);
     max-height: 100dvh;
     padding: 32px 24px 20px;
     transform: translateX(0);

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { API_AUTH_REQUIRED_EVENT } from '../../../shared/api/apiClient';
+import { API_AUTH_REQUIRED_EVENT, ApiError } from '../../../shared/api/apiClient';
 import { authTokenStorage } from '../../../shared/api/authTokenStorage';
 import { authApi, toAuthSessionMenus, toAuthSessionUser } from './api/authApi';
 import type { AuthSession, LoginSessionRequest } from './types/authSession';
@@ -26,29 +26,46 @@ type AuthSessionProviderProps = {
  * 수정: 인증 흐름이 바뀌면 login/logout/refreshSession만 우선 확인한다.
  */
 export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
-  const [session, setSession] = useState<AuthSession | null>(() => authSessionStorage.read());
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [initialSession] = useState<AuthSession | null>(() => authSessionStorage.read());
+  const [session, setSession] = useState<AuthSession | null>(initialSession);
+  const [isInitializing, setIsInitializing] = useState(Boolean(initialSession));
 
   useEffect(() => {
     let mounted = true;
 
     async function refreshSession() {
-      if (!session) {
+      if (!initialSession) {
+        setIsInitializing(false);
         return;
       }
 
       try {
-        const [me, menus] = await Promise.all([authApi.me(), authApi.menus()]);
+        const me = await authApi.me();
         if (!mounted) return;
 
         const refreshedSession: AuthSession = {
-          ...session,
-          user: toAuthSessionUser(me),
-          menus: toAuthSessionMenus(menus)
+          ...initialSession,
+          user: toAuthSessionUser(me)
         };
         authSessionStorage.write(refreshedSession);
         setSession(refreshedSession);
-      } catch {
+
+        try {
+          const menus = await authApi.menus();
+          if (!mounted) return;
+
+          const sessionWithMenus: AuthSession = {
+            ...refreshedSession,
+            menus: toAuthSessionMenus(menus)
+          };
+          authSessionStorage.write(sessionWithMenus);
+          setSession(sessionWithMenus);
+        } catch (error) {
+          if (error instanceof ApiError && error.type === 'session') {
+            throw error;
+          }
+        }
+      } catch (error) {
         authSessionStorage.clear();
         if (mounted) {
           setSession(null);
@@ -65,7 +82,7 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initialSession]);
 
   useEffect(() => {
     const handleAuthRequired = () => {

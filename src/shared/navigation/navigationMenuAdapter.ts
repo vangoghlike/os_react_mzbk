@@ -4,7 +4,6 @@ import {
   navigationGroups,
   productionNavigationGroups,
   sampleNavigationGroups,
-  supplementalNavigationGroups,
   type NavigationGroup,
   type NavigationItem
 } from './navigationGroups';
@@ -13,13 +12,25 @@ const knownNavigationPaths = new Set(navigationGroups.flatMap((group) => group.i
 
 const apiRouteAliases: Record<string, string> = {
   '/monitoring/dashboard': '/dashboard/plant-operation-status',
+  '/monitoring/dashboard/plant': '/dashboard/plant-operation-status',
+  '/monitoring/dashboard/total': '/dashboard/plant-operation-status',
   '/monitoring/grid': '/dashboard/base-generation',
+  '/monitoring/base/plant': '/dashboard/base-generation',
+  '/monitoring/base/total': '/dashboard/base-generation',
   '/monitoring/ess': '/dashboard/support-generation',
+  '/monitoring/assist': '/dashboard/support-generation',
   '/monitoring/diesel1': '/dashboard/support-generation',
   '/monitoring/diesel2': '/dashboard/support-generation',
   '/monitoring/pcs': '/dashboard/charge-discharge',
   '/monitoring/battery': '/dashboard/charge-discharge',
+  '/monitoring/standby': '/dashboard/charge-discharge',
   '/monitoring/ac': '/dashboard/ac-status',
+  '/monitoring/dispatch': '/dashboard/power-consumption-status',
+  '/analysis/base/plant/history': '/history/grid',
+  '/analysis/base/total/history': '/history/grid',
+  '/analysis/assist/history': '/history/ess',
+  '/analysis/standby/history': '/history/pcs',
+  '/analysis/dispatch/history': '/history/power-consumption',
   '/system/roles': '/admin/role',
   '/system/users': '/admin/user',
   '/system/codes': '/admin/code',
@@ -36,30 +47,54 @@ const apiRouteAliases: Record<string, string> = {
   '/report/grid': '/reports/operation',
   '/report/ess': '/reports/operation',
   '/report/ac': '/reports/operation',
+  '/report/daily': '/reports/operation',
+  '/report/weekly': '/reports/operation',
+  '/report/monthly': '/reports/operation',
+  '/report/yearly': '/reports/operation',
   '/excel': '/reports/operation'
 };
 
 const labelRouteRules: Array<{ includes: string[]; path: string }> = [
   { includes: ['발전소', '운영'], path: '/dashboard/plant-operation-status' },
+  { includes: ['기저전력', '개별', '이력'], path: '/analysis/base/plant/history' },
+  { includes: ['기저전력', '통합', '이력'], path: '/analysis/base/total/history' },
+  { includes: ['보조전력', '이력'], path: '/analysis/assist/history' },
+  { includes: ['예비전력', '이력'], path: '/analysis/standby/history' },
+  { includes: ['전력급전', '이력'], path: '/analysis/dispatch/history' },
+  { includes: ['기저전력', '개별'], path: '/monitoring/base/plant' },
+  { includes: ['기저전력', '통합'], path: '/monitoring/base/total' },
+  { includes: ['보조전력'], path: '/monitoring/assist' },
+  { includes: ['예비전력'], path: '/monitoring/standby' },
+  { includes: ['전력급전'], path: '/monitoring/dispatch' },
   { includes: ['GRID', '이력'], path: '/history/grid' },
   { includes: ['ESS', '이력'], path: '/history/ess' },
   { includes: ['PCS', '이력'], path: '/history/pcs' },
+  { includes: ['배터리', '이력'], path: '/history/battery' },
+  { includes: ['디젤1', '이력'], path: '/history/diesel1' },
+  { includes: ['디젤2', '이력'], path: '/history/diesel2' },
+  { includes: ['공조기', '이력'], path: '/history/ac' },
   { includes: ['GRID', '현황'], path: '/monitoring/grid' },
   { includes: ['ESS', '현황'], path: '/monitoring/ess' },
   { includes: ['PCS', '현황'], path: '/monitoring/pcs' },
   { includes: ['배터리', '현황'], path: '/monitoring/battery' },
   { includes: ['디젤1', '현황'], path: '/monitoring/diesel1' },
   { includes: ['디젤2', '현황'], path: '/monitoring/diesel2' },
-  { includes: ['기저', '이력'], path: '/history/grid-base-generation-history' },
+  { includes: ['공조기', '현황'], path: '/monitoring/ac' },
+  { includes: ['기저', '이력'], path: '/history/grid' },
   { includes: ['기저'], path: '/dashboard/base-generation' },
-  { includes: ['보조', '이력'], path: '/history/support-generation-history' },
+  { includes: ['보조', '이력'], path: '/history/ess' },
   { includes: ['보조'], path: '/dashboard/support-generation' },
-  { includes: ['충방전', '이력'], path: '/history/pcs-charge-discharge-history' },
+  { includes: ['충방전', '이력'], path: '/history/pcs' },
   { includes: ['충방전'], path: '/dashboard/charge-discharge' },
-  { includes: ['전력', '이력'], path: '/history/power-consumption-history' },
+  { includes: ['전력', '이력'], path: '/history/power-consumption' },
   { includes: ['전력'], path: '/dashboard/power-consumption-status' },
-  { includes: ['공조'], path: '/dashboard/ac-status' },
   { includes: ['리포트'], path: '/reports/operation' },
+  { includes: ['엑셀'], path: '/excel' },
+  { includes: ['일간', '보고서'], path: '/report/daily' },
+  { includes: ['주간', '보고서'], path: '/report/weekly' },
+  { includes: ['월간', '보고서'], path: '/report/monthly' },
+  { includes: ['년간', '보고서'], path: '/report/yearly' },
+  { includes: ['연간', '보고서'], path: '/report/yearly' },
   { includes: ['마스터'], path: '/admin/master' },
   { includes: ['코드'], path: '/admin/code' },
   { includes: ['사용자'], path: '/admin/user' },
@@ -127,15 +162,15 @@ function resolveMenuPath(menu: AuthSessionMenu) {
 }
 
 function createMenuKey(prefix: string, value: string) {
-  return `${prefix}-${value}`.replace(/[^a-zA-Z0-9가-힣-]/g, '-').replace(/-+/g, '-');
+  return `${prefix}-${value}`.replace(/[^a-zA-Z0-9가-힣]/g, '-').replace(/-+/g, '-');
 }
 
 function getGroupIcon(label: string, firstPath?: string) {
-  if (label.includes('이력') || firstPath?.startsWith('/history')) {
+  if (label.includes('이력') || label.includes('통계') || firstPath?.startsWith('/history') || firstPath?.startsWith('/analysis')) {
     return commonIconSources.operationHistory;
   }
 
-  if (label.includes('리포트') || firstPath?.startsWith('/reports')) {
+  if (label.includes('리포트') || label.includes('보고서') || firstPath?.startsWith('/reports') || firstPath?.startsWith('/report')) {
     return commonIconSources.operationReport;
   }
 
@@ -143,7 +178,7 @@ function getGroupIcon(label: string, firstPath?: string) {
     return commonIconSources.excelSave;
   }
 
-  if (label.includes('관리') || firstPath?.startsWith('/admin')) {
+  if (label.includes('관리') || label.includes('마스터') || firstPath?.startsWith('/admin') || firstPath?.startsWith('/master')) {
     return commonIconSources.adminManagement;
   }
 
@@ -155,21 +190,24 @@ function getGroupIcon(label: string, firstPath?: string) {
 }
 
 function getItemIcon(label: string, path: string) {
-  if (path === '/history/grid') return commonIconSources.gridHistory;
-  if (path === '/history/ess') return commonIconSources.supportHistory;
-  if (path === '/history/pcs') return commonIconSources.pcsHistory;
-  if (path === '/history/power-consumption') return commonIconSources.powerHistory;
-  if (path.includes('grid-base-generation-history')) return commonIconSources.gridHistory;
-  if (path.includes('support-generation-history')) return commonIconSources.supportHistory;
-  if (path.includes('pcs-charge-discharge-history')) return commonIconSources.pcsHistory;
-  if (path.includes('power-consumption-history')) return commonIconSources.powerHistory;
+  if (path === '/history/grid' || path.includes('/analysis/base/')) return commonIconSources.gridHistory;
+  if (path === '/history/ess' || path.includes('/analysis/assist')) return commonIconSources.supportHistory;
+  if (path === '/history/pcs' || path.includes('/analysis/standby')) return commonIconSources.pcsHistory;
+  if (path === '/history/battery') return commonIconSources.chargeDischarge;
+  if (path === '/history/diesel1' || path === '/history/diesel2') return commonIconSources.supportHistory;
+  if (path === '/history/ac') return commonIconSources.acStatus;
+  if (path === '/history/power-consumption' || path.includes('/analysis/dispatch')) return commonIconSources.powerHistory;
   if (path.includes('plant-operation') || label.includes('발전소')) return commonIconSources.plantOperation;
-  if (path.includes('ac-status') || label.includes('공조')) return commonIconSources.acStatus;
-  if (path.includes('base-generation') || label.includes('기저')) return commonIconSources.baseGeneration;
-  if (path.includes('support-generation') || label.includes('보조')) return commonIconSources.supportGeneration;
-  if (path.includes('charge-discharge') || label.includes('충방전')) return commonIconSources.chargeDischarge;
-  if (path.includes('power-consumption') || label.includes('전력')) return commonIconSources.powerConsumption;
-  if (path.includes('reports')) return commonIconSources.operationDetail;
+  if (path.includes('ac-status') || label.includes('공조기')) return commonIconSources.acStatus;
+  if (path.includes('base-generation') || path.includes('/monitoring/base') || label.includes('기저') || label.includes('GRID')) return commonIconSources.baseGeneration;
+  if (path.includes('support-generation') || path.includes('/monitoring/assist') || label.includes('보조') || label.includes('ESS') || label.includes('디젤')) {
+    return commonIconSources.supportGeneration;
+  }
+  if (path.includes('charge-discharge') || path.includes('/monitoring/standby') || label.includes('예비') || label.includes('충방전') || label.includes('PCS') || label.includes('배터리')) {
+    return commonIconSources.chargeDischarge;
+  }
+  if (path.includes('power-consumption') || path.includes('/monitoring/dispatch') || label.includes('전력')) return commonIconSources.powerConsumption;
+  if (path.includes('reports') || path.startsWith('/report')) return commonIconSources.operationDetail;
   if (path.includes('excel')) return commonIconSources.excelSave;
   if (path.includes('master')) return commonIconSources.masterManagement;
   if (path.includes('code')) return commonIconSources.codeManagement;
@@ -233,28 +271,18 @@ function removeDuplicateSampleItems(baseGroups: NavigationGroup[]) {
     .filter((group) => group.items.length > 0);
 }
 
-function getSupplementalGroups(baseGroups: NavigationGroup[]) {
-  if (baseGroups.length === 0) {
-    return [];
-  }
-
-  // API 메뉴에 없는 이력 화면만 별도 그룹으로 유지해 현황 메뉴 중복을 막는다.
-  return supplementalNavigationGroups;
-}
-
 /*
  * 필요: /me/menus 응답을 사이드바 렌더링 데이터로 변환한다.
  * 연결: AuthSessionProvider, Sidebar, navigationGroups.
- * 설명: API 메뉴가 있으면 API를 우선하고, 초기 로딩/권한 미응답 동안은 화면 확인용 기본 메뉴를 유지한다.
- * 수정: 백엔드 메뉴 URL이나 명칭이 확정되면 labelRouteRules만 보정하면 된다.
+ * 설명: API 메뉴를 우선 사용하고, API 메뉴에 아직 없는 샘플 화면만 별도 그룹으로 보강한다.
+ * 수정: 백엔드 메뉴 URL이나 명칭이 확정되면 apiRouteAliases와 labelRouteRules만 조정한다.
  */
 export function getNavigationGroups(sessionMenus: AuthSessionMenu[]) {
   const apiGroups = sortMenus(buildMenuTree(sessionMenus))
     .map((menu) => toNavigationGroup(menu))
     .filter((group): group is NavigationGroup => Boolean(group));
   const baseGroups = apiGroups.length > 0 ? apiGroups : productionNavigationGroups;
-  const supplementalGroups = apiGroups.length > 0 ? getSupplementalGroups(baseGroups) : [];
-  const sampleGroups = removeDuplicateSampleItems([...baseGroups, ...supplementalGroups]);
+  const sampleGroups = removeDuplicateSampleItems(baseGroups);
 
-  return [...baseGroups, ...supplementalGroups, ...sampleGroups];
+  return [...baseGroups, ...sampleGroups];
 }

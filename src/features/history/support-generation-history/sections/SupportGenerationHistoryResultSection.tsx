@@ -1,30 +1,31 @@
 import { useMemo, useState } from 'react';
 import type { EChartsOption } from 'echarts';
 import { BaseChart } from '../../../../shared/ui/BaseChart';
-import { BasicTable } from '../../../../shared/ui/BasicTable';
-import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import { DataTableCard } from '../../../../shared/ui/DataTableCard';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
+import { getHourlyChartMaxWidth, getHourlyChartMinWidth } from '../../../../shared/utils/hourlyChartSlots';
 import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
 import { supportGenerationHistoryMetrics } from '../constants/supportGenerationHistoryConfig';
 import type { SupportGenerationHistoryMetric, SupportGenerationHistoryMode } from '../types/supportGenerationHistory';
 import '../styles/SupportGenerationHistoryResultSection.css';
 
 type SupportGenerationHistoryResultSectionProps = {
-  searchCriteria: HistorySearchCriteria<SupportGenerationHistoryMode>;
+  searchCriteria: SearchConditionCriteria<SupportGenerationHistoryMode>;
   searchedAt: string;
 };
 
 /*
  * 필요: 보조발전 이력의 지표 탭, 차트, 상세 표, 엑셀 저장을 API 데이터로 구성한다.
- * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, BasicTable, ExcelSaveButton.
+ * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, DataTableCard.
  * 설명: 보조발전 이력은 ESS 이력 API를 기준으로 받아 공통 history view model로 변환한다.
  * 수정: 차트 높이와 표 간격은 styles/SupportGenerationHistoryResultSection.css에서 조정한다.
  */
 export function SupportGenerationHistoryResultSection({ searchCriteria, searchedAt }: SupportGenerationHistoryResultSectionProps) {
   const [metric, setMetric] = useState<SupportGenerationHistoryMetric>('Max kWh');
+  const isHourlyChart = searchCriteria.mode !== 'Year' && searchCriteria.mode !== 'Month';
   const historyConfig = useMemo(
     () => ({
       resource: 'ess' as const,
@@ -51,8 +52,7 @@ export function SupportGenerationHistoryResultSection({ searchCriteria, searched
     () => ({
       color: ['#2f9cff', '#f3f6ff'],
       tooltip: { trigger: 'axis' },
-      legend: { bottom: 0, textStyle: { color: '#d6ddea' } },
-      grid: { left: 24, right: 24, top: 30, bottom: 64, containLabel: true },
+      grid: { left: 64, right: 24, top: 30, bottom: 38, containLabel: true },
       xAxis: {
         type: 'category',
         data: data?.labels ?? [],
@@ -61,8 +61,7 @@ export function SupportGenerationHistoryResultSection({ searchCriteria, searched
       },
       yAxis: {
         type: 'value',
-        name: 'Total kWh',
-        nameTextStyle: { color: '#d6ddea' },
+        name: '',
         axisLabel: { color: '#b8c2d8' },
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
       },
@@ -85,7 +84,8 @@ export function SupportGenerationHistoryResultSection({ searchCriteria, searched
   );
 
   return (
-    <PageCard className="support-generation-history-result">
+    <>
+    <PageCard className="support-generation-history-result support-generation-history-result--chart">
       <MetricTabs
         ariaLabel="보조발전 이력 지표"
         value={metric}
@@ -98,22 +98,31 @@ export function SupportGenerationHistoryResultSection({ searchCriteria, searched
       {isLoading && <PageDataLoadingFallback title="보조발전 이력" />}
       {!isLoading && errorMessage && <div role="alert">{errorMessage}</div>}
       {!isLoading && data && (
-        <>
-          <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
-          <div className="support-generation-history-result__table">
-            <ExcelSaveButton
-              fileName={`보조발전_이력_${searchCriteria.mode}`}
-              sheets={[{ name: '보조발전 이력', headerRows: data.table.headerRows, rows: data.table.rows }]}
-            />
-            <BasicTable
-              ariaLabel={data.table.ariaLabel}
-              headerRows={data.table.headerRows}
-              rows={data.table.rows}
-              minWidth={data.table.minWidth}
-            />
-          </div>
-        </>
+          <BaseChart
+            option={chartOption}
+            height={420}
+            minWidth={isHourlyChart ? getHourlyChartMinWidth(data.labels.length) : 1120}
+            maxWidth={isHourlyChart ? getHourlyChartMaxWidth(data.labels.length) : undefined}
+            scrollable
+            scrollToCurrentTime={isHourlyChart && data.labels.length <= 24}
+            yAxisLabel="Total kWh"
+            legendItems={[
+              { name: 'ACTIVE POWER', type: 'bar', color: '#2f9cff' },
+              { name: 'REACTIVE POWER', type: 'line', color: '#f3f6ff' }
+            ]}
+          />
       )}
     </PageCard>
+      {!isLoading && data && (
+        <DataTableCard
+          className="support-generation-history-result__table-card"
+          ariaLabel={data.table.ariaLabel}
+          headerRows={data.table.headerRows}
+          rows={data.table.rows}
+          minWidth={data.table.minWidth}
+          excel={{ fileName: `보조발전_이력_${searchCriteria.mode}`, sheetName: '보조발전 이력' }}
+        />
+      )}
+    </>
   );
 }

@@ -1,8 +1,10 @@
 import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
+import { useState } from 'react';
 import { commonIconSources } from '../assets/icons/commonIconSources';
 import type { ExcelExportSheet } from '../utils/excelExport';
 import { downloadExcelWorkbook } from '../utils/excelExport';
 import { ActionButton } from './ActionButton';
+import { ConfirmActionModal } from './ConfirmActionModal';
 import './ExcelSaveButton.css';
 
 type ExcelSaveButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
@@ -29,28 +31,42 @@ export function ExcelSaveButton({
   onClick,
   ...props
 }: ExcelSaveButtonProps) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
   const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
     onClick?.(event);
     if (event.defaultPrevented || !sheets?.length) return;
 
-    // 저장 전 확인은 모든 엑셀 버튼에서 같은 흐름으로 처리한다.
-    const confirmed = window.confirm('엑셀 파일을 저장하시겠습니까?');
-    if (!confirmed) return;
+    setIsConfirmOpen(true);
+  };
 
+  const handleConfirm = () => {
+    if (!sheets?.length) return;
     downloadExcelWorkbook({ fileName, sheets });
+    setIsConfirmOpen(false);
   };
 
   return (
-    <ActionButton
-      variant="success"
-      size="sm"
-      className={`excel-save-button ${className}`.trim()}
-      aria-label={props['aria-label'] ?? label}
-      onClick={handleClick}
-      {...props}
-    >
-      <img src={iconSrc} alt={iconAlt} className="excel-save-button__icon" />
-      <span>{label}</span>
-    </ActionButton>
+    <>
+      <ActionButton
+        variant="success"
+        size="sm"
+        className={`excel-save-button ${className}`.trim()}
+        aria-label={props['aria-label'] ?? label}
+        onClick={handleClick}
+        {...props}
+      >
+        <img src={iconSrc} alt={iconAlt} className="excel-save-button__icon" />
+        <span>{label}</span>
+      </ActionButton>
+      <ConfirmActionModal
+        open={isConfirmOpen}
+        title="엑셀 저장 확인"
+        description="엑셀 파일을 저장하시겠습니까?"
+        confirmLabel="저장"
+        onConfirm={handleConfirm}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
+    </>
   );
 }

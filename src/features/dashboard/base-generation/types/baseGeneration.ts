@@ -38,6 +38,11 @@ export type BaseGenerationEquipmentDetailTableData = BaseGenerationDetailTableDa
   defaultExpanded: boolean;
 };
 
+export type BaseGenerationTargetOption = {
+  label: string;
+  value: string;
+};
+
 export type BaseGenerationSummaryData = {
   columns: string[];
   metrics: BaseGenerationSummaryMetric[];
@@ -55,4 +60,6 @@ export type BaseGenerationPageData = {
   summary: BaseGenerationSummaryData;
   trendChart: BaseGenerationTrendChartData;
   tables: BaseGenerationTableData;
+  targetOptions: BaseGenerationTargetOption[];
+  selectedTargetId: string;
 };

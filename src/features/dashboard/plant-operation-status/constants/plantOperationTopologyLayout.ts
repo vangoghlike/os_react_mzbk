@@ -41,9 +41,9 @@ export type PlantOperationTopologyPlacements = {
  * 수정: 칸 단위, 위치, 선 분배 기준은 이 파일에서만 조정한다.
  */
 export const plantOperationCanvasLayout: PlantOperationCanvasLayout = {
-  columnWidth: 20,
+  columnWidth: 27,
   columnGap: 0,
-  rowHeight: 20,
+  rowHeight: 30,
   rowGap: 0
 };
 
@@ -71,7 +71,7 @@ export const plantOperationTopologyPlacements: PlantOperationTopologyPlacements 
     }
   },
   topAuxiliaryTables: {
-    'air-conditioner': { colStart: 3, colSpan: 10, rowStart: 16, rowSpan: 7, anchorColumn: 8 }
+    'air-conditioner': { colStart: 3, colSpan: 16, rowStart: 16, rowSpan: 7, anchorColumn: 11 }
   },
   mainBtbLabel: {
     id: 'main-btb-label',
@@ -88,7 +88,7 @@ export const plantOperationTopologyPlacements: PlantOperationTopologyPlacements 
   },
   storageBtb: {
     labelLayout: { colStart: 38, colSpan: 8, rowStart: 28, rowSpan: 2, anchorColumn: 42 },
-    tableLayout: { colStart: 49, colSpan: 18, rowStart: 27, rowSpan: 7, anchorColumn: 58 }
+    tableLayout: { colStart: 49, colSpan: 24, rowStart: 27, rowSpan: 7, anchorColumn: 61 }
   },
   pcs: {
     labelLayout: { colStart: 38, colSpan: 8, rowStart: 39, rowSpan: 2, anchorColumn: 42 },
@@ -100,24 +100,24 @@ export const plantOperationTopologyPlacements: PlantOperationTopologyPlacements 
   },
   generators: {
     'diesel-1': {
-      agcLayout: { colStart: 68, colSpan: 6, rowStart: 28, rowSpan: 2, anchorColumn: 71 },
-      tableLayout: { colStart: 75, colSpan: 5, rowStart: 27, rowSpan: 9, anchorColumn: 77.5 },
-      equipmentLayout: { colStart: 68, colSpan: 6, rowStart: 42, rowSpan: 2, anchorColumn: 71 }
+      agcLayout: { colStart: 77, colSpan: 6, rowStart: 30, rowSpan: 2, anchorColumn: 80 },
+      tableLayout: { colStart: 87, colSpan: 9, rowStart: 25, rowSpan: 14, anchorColumn: 91.5 },
+      equipmentLayout: { colStart: 77, colSpan: 6, rowStart: 41, rowSpan: 2, anchorColumn: 80 }
     },
     'diesel-2': {
-      agcLayout: { colStart: 84, colSpan: 6, rowStart: 28, rowSpan: 2, anchorColumn: 87 },
-      tableLayout: { colStart: 91, colSpan: 5, rowStart: 27, rowSpan: 9, anchorColumn: 93.5 },
-      equipmentLayout: { colStart: 84, colSpan: 6, rowStart: 42, rowSpan: 2, anchorColumn: 87 }
+      agcLayout: { colStart: 98, colSpan: 6, rowStart: 30, rowSpan: 2, anchorColumn: 101 },
+      tableLayout: { colStart: 108, colSpan: 9, rowStart: 25, rowSpan: 14, anchorColumn: 112.5 },
+      equipmentLayout: { colStart: 98, colSpan: 6, rowStart: 41, rowSpan: 2, anchorColumn: 101 }
     }
   },
   inverters: {
     'ivt-1': { colStart: 3, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 5 },
-    'ivt-2': { colStart: 7, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 9 },
-    'ivt-3': { colStart: 11, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 13 },
-    'ivt-4': { colStart: 15, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 17 },
-    'ivt-5': { colStart: 19, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 21 },
-    'ivt-6': { colStart: 23, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 25 },
-    'ivt-7': { colStart: 27, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 29 }
+    'ivt-2': { colStart: 8, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 10 },
+    'ivt-3': { colStart: 13, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 15 },
+    'ivt-4': { colStart: 18, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 20 },
+    'ivt-5': { colStart: 23, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 25 },
+    'ivt-6': { colStart: 28, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 30 },
+    'ivt-7': { colStart: 33, colSpan: 4, rowStart: 43, rowSpan: 2, anchorColumn: 35 }
   }
 };
 

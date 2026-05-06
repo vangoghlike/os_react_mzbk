@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
 import { toPlantOperationStatusData } from '../adapters/plantOperationStatusAdapter';
-import { plantOperationStatusApi } from '../api/plantOperationStatusApi';
+import { plantOperationStatusApi, type PlantOperationViewMode } from '../api/plantOperationStatusApi';
 import type { PlantOperationStatusData } from '../types/plantOperationStatus';
 
 type PlantOperationStatusState = {
@@ -13,10 +13,10 @@ type PlantOperationStatusState = {
 /*
  * 필요: 발전소 운영현황의 실제 API 조회 상태를 화면에 전달한다.
  * 연결: PlantOperationStatusPage, plantOperationStatusApi, plantOperationStatusAdapter.
- * 설명: 컴포넌트는 data/loading/error만 받고, endpoint와 DTO 변환은 hook 밖 계층에 둔다.
+ * 설명: 개별 대상 targetId 변경은 이 hook에서 재조회하고, endpoint와 DTO 변환은 hook 밖 계층에 둔다.
  * 수정: 자동 갱신이나 조회 주기가 필요하면 이 hook에만 주기를 추가한다.
  */
-export function usePlantOperationStatus() {
+export function usePlantOperationStatus(viewMode: PlantOperationViewMode, targetId = '') {
   const [state, setState] = useState<PlantOperationStatusState>({
     data: null,
     isLoading: true,
@@ -30,7 +30,7 @@ export function usePlantOperationStatus() {
       setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
 
       try {
-        const response = await plantOperationStatusApi.getLatestStatus();
+        const response = await plantOperationStatusApi.getLatestStatus(viewMode, targetId);
         const data = toPlantOperationStatusData(response);
 
         if (!mounted) {
@@ -53,7 +53,7 @@ export function usePlantOperationStatus() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [targetId, viewMode]);
 
   return state;
 }

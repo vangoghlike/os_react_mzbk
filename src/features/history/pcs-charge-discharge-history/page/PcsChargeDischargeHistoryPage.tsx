@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
 import { pcsChargeDischargeHistoryDefaultCriteria } from '../constants/pcsChargeDischargeHistoryConfig';
 import { PcsChargeDischargeHistoryResultSection } from '../sections/PcsChargeDischargeHistoryResultSection';
@@ -15,17 +15,18 @@ import '../../shared/HistoryPageLayout.css';
  */
 export function PcsChargeDischargeHistoryPage() {
   const [searchCriteria, setSearchCriteria] =
-    useState<HistorySearchCriteria<PcsChargeDischargeHistoryMode>>(pcsChargeDischargeHistoryDefaultCriteria);
+    useState<SearchConditionCriteria<PcsChargeDischargeHistoryMode>>(pcsChargeDischargeHistoryDefaultCriteria);
   const [searchedAt, setSearchedAt] = useState('조회 전');
 
-  const handleSearch = (nextCriteria: HistorySearchCriteria<PcsChargeDischargeHistoryMode>) => {
+  const handleSearch = (nextCriteria: SearchConditionCriteria<PcsChargeDischargeHistoryMode>) => {
     setSearchCriteria(nextCriteria);
     setSearchedAt(new Date().toLocaleTimeString('ko-KR', { hour12: false }));
   };
 
   return (
     <div className="page-stack history-page">
-      <PageHeading title="PCS 충방전 이력" actions={<PcsChargeDischargeHistorySearchSection onSearch={handleSearch} />} />
+      <PageHeading title="PCS 충방전 이력" />
+      <PcsChargeDischargeHistorySearchSection onSearch={handleSearch} />
       <PcsChargeDischargeHistoryResultSection searchCriteria={searchCriteria} searchedAt={searchedAt} />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
 import { supportGenerationHistoryDefaultCriteria } from '../constants/supportGenerationHistoryConfig';
 import { SupportGenerationHistoryResultSection } from '../sections/SupportGenerationHistoryResultSection';
@@ -15,17 +15,18 @@ import '../../shared/HistoryPageLayout.css';
  */
 export function SupportGenerationHistoryPage() {
   const [searchCriteria, setSearchCriteria] =
-    useState<HistorySearchCriteria<SupportGenerationHistoryMode>>(supportGenerationHistoryDefaultCriteria);
+    useState<SearchConditionCriteria<SupportGenerationHistoryMode>>(supportGenerationHistoryDefaultCriteria);
   const [searchedAt, setSearchedAt] = useState('조회 전');
 
-  const handleSearch = (nextCriteria: HistorySearchCriteria<SupportGenerationHistoryMode>) => {
+  const handleSearch = (nextCriteria: SearchConditionCriteria<SupportGenerationHistoryMode>) => {
     setSearchCriteria(nextCriteria);
     setSearchedAt(new Date().toLocaleTimeString('ko-KR', { hour12: false }));
   };
 
   return (
     <div className="page-stack history-page">
-      <PageHeading title="보조발전 이력" actions={<SupportGenerationHistorySearchSection onSearch={handleSearch} />} />
+      <PageHeading title="보조발전 이력" />
+      <SupportGenerationHistorySearchSection onSearch={handleSearch} />
       <SupportGenerationHistoryResultSection searchCriteria={searchCriteria} searchedAt={searchedAt} />
     </div>
   );

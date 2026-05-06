@@ -1,4 +1,4 @@
-import type { PlantOperationStatusData, PlantOperationValueRow } from '../types/plantOperationStatus';
+import type { PlantOperationStatusData, PlantOperationTargetOption, PlantOperationValueRow } from '../types/plantOperationStatus';
 import type {
   DieselStatusResponseDto,
   EssStatusResponseDto,
@@ -150,11 +150,22 @@ function createDieselRows(source: DieselStatusResponseDto) {
   ];
 }
 
+function createTargetOptions(targets: PlantOperationStatusLatestResponse['targets']): PlantOperationTargetOption[] {
+  return targets
+    .map((target, index) => {
+      const targetId = getRawValue(target.targetId) || `target-${index + 1}`;
+      const targetName = getRawValue(target.targetName) || `대상 #${index + 1}`;
+
+      return { targetId, targetName };
+    })
+    .filter((target) => target.targetId);
+}
+
 /*
  * 필요: monitoring API 응답을 기존 발전소 운영현황 ViewModel로 변환한다.
  * 연결: usePlantOperationStatus, PlantOperationDiagramSection.
- * 설명: 화면 값 하드코딩은 제거하고, API null/빈값은 여기서 '-'로 정리한다.
- * 수정: API 필드 의미가 바뀌면 화면 TSX가 아니라 이 adapter의 매핑만 수정한다.
+ * 설명: 화면 값 하드코딩은 제거하고, API null/빈값은 여기서 '-'로 정리하며 targetList는 조회 대상 옵션으로 분리한다.
+ * 수정: API 필드 의미나 조회 대상 표시명이 바뀌면 화면 TSX가 아니라 이 adapter의 매핑만 수정한다.
  */
 export function toPlantOperationStatusData(response: PlantOperationStatusLatestResponse): PlantOperationStatusData {
   const { grid, ess, pcs, battery, diesel1, diesel2, ac } = response;
@@ -167,6 +178,7 @@ export function toPlantOperationStatusData(response: PlantOperationStatusLatestR
       createBank('bank-4', 'Bank #4', diesel1.dslAtpTot, diesel1.dslAtpTotAccm ?? diesel1.dslAtpDayAccm, diesel1.dslPfTot),
       createBank('bank-5', 'Bank #5', diesel2.dslAtpTot, diesel2.dslAtpTotAccm ?? diesel2.dslAtpDayAccm, diesel2.dslPfTot)
     ],
+    targetOptions: createTargetOptions(response.targets),
     topAuxiliaryTables: [
       {
         id: 'air-conditioner',

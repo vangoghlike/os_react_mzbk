@@ -1,30 +1,31 @@
 import { useMemo, useState } from 'react';
 import type { EChartsOption } from 'echarts';
 import { BaseChart } from '../../../../shared/ui/BaseChart';
-import { BasicTable } from '../../../../shared/ui/BasicTable';
-import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import { DataTableCard } from '../../../../shared/ui/DataTableCard';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
+import { getHourlyChartMaxWidth, getHourlyChartMinWidth } from '../../../../shared/utils/hourlyChartSlots';
 import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
 import { pcsChargeDischargeHistoryMetrics } from '../constants/pcsChargeDischargeHistoryConfig';
 import type { PcsChargeDischargeHistoryMetric, PcsChargeDischargeHistoryMode } from '../types/pcsChargeDischargeHistory';
 import '../styles/PcsChargeDischargeHistoryResultSection.css';
 
 type PcsChargeDischargeHistoryResultSectionProps = {
-  searchCriteria: HistorySearchCriteria<PcsChargeDischargeHistoryMode>;
+  searchCriteria: SearchConditionCriteria<PcsChargeDischargeHistoryMode>;
   searchedAt: string;
 };
 
 /*
  * 필요: PCS 충방전 이력의 지표 탭, 차트, 상세 표를 API 데이터로 배치한다.
- * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, BasicTable, ExcelSaveButton.
+ * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, DataTableCard.
  * 설명: /monitoring/pcs/history 응답을 공통 history view model로 변환해 사용한다.
  * 수정: 결과 패널 스타일은 styles/PcsChargeDischargeHistoryResultSection.css에서 조정한다.
  */
 export function PcsChargeDischargeHistoryResultSection({ searchCriteria, searchedAt }: PcsChargeDischargeHistoryResultSectionProps) {
   const [metric, setMetric] = useState<PcsChargeDischargeHistoryMetric>('Max kWh');
+  const isHourlyChart = searchCriteria.mode !== 'Year' && searchCriteria.mode !== 'Month';
   const historyConfig = useMemo(
     () => ({
       resource: 'pcs' as const,
@@ -51,8 +52,7 @@ export function PcsChargeDischargeHistoryResultSection({ searchCriteria, searche
     () => ({
       color: ['#2f9cff', '#f3f6ff'],
       tooltip: { trigger: 'axis' },
-      legend: { bottom: 0, textStyle: { color: '#d6ddea' } },
-      grid: { left: 24, right: 24, top: 30, bottom: 64, containLabel: true },
+      grid: { left: 64, right: 24, top: 30, bottom: 38, containLabel: true },
       xAxis: {
         type: 'category',
         data: data?.labels ?? [],
@@ -61,8 +61,7 @@ export function PcsChargeDischargeHistoryResultSection({ searchCriteria, searche
       },
       yAxis: {
         type: 'value',
-        name: 'Total kWh',
-        nameTextStyle: { color: '#d6ddea' },
+        name: '',
         axisLabel: { color: '#b8c2d8' },
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
       },
@@ -85,7 +84,8 @@ export function PcsChargeDischargeHistoryResultSection({ searchCriteria, searche
   );
 
   return (
-    <PageCard className="pcs-charge-history-result">
+    <>
+    <PageCard className="pcs-charge-history-result pcs-charge-history-result--chart">
       <MetricTabs
         ariaLabel="PCS 충방전 이력 지표"
         value={metric}
@@ -98,22 +98,31 @@ export function PcsChargeDischargeHistoryResultSection({ searchCriteria, searche
       {isLoading && <PageDataLoadingFallback title="PCS 충방전 이력" />}
       {!isLoading && errorMessage && <div role="alert">{errorMessage}</div>}
       {!isLoading && data && (
-        <>
-          <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
-          <div className="pcs-charge-history-result__table">
-            <ExcelSaveButton
-              fileName={`PCS_충방전_이력_${searchCriteria.mode}`}
-              sheets={[{ name: 'PCS 충방전 이력', headerRows: data.table.headerRows, rows: data.table.rows }]}
-            />
-            <BasicTable
-              ariaLabel={data.table.ariaLabel}
-              headerRows={data.table.headerRows}
-              rows={data.table.rows}
-              minWidth={data.table.minWidth}
-            />
-          </div>
-        </>
+          <BaseChart
+            option={chartOption}
+            height={420}
+            minWidth={isHourlyChart ? getHourlyChartMinWidth(data.labels.length) : 1120}
+            maxWidth={isHourlyChart ? getHourlyChartMaxWidth(data.labels.length) : undefined}
+            scrollable
+            scrollToCurrentTime={isHourlyChart && data.labels.length <= 24}
+            yAxisLabel="Total kWh"
+            legendItems={[
+              { name: 'ACTIVE POWER', type: 'bar', color: '#2f9cff' },
+              { name: 'DC POWER', type: 'line', color: '#f3f6ff' }
+            ]}
+          />
       )}
     </PageCard>
+      {!isLoading && data && (
+        <DataTableCard
+          className="pcs-charge-history-result__table-card"
+          ariaLabel={data.table.ariaLabel}
+          headerRows={data.table.headerRows}
+          rows={data.table.rows}
+          minWidth={data.table.minWidth}
+          excel={{ fileName: `PCS_충방전_이력_${searchCriteria.mode}`, sheetName: 'PCS 충방전 이력' }}
+        />
+      )}
+    </>
   );
 }

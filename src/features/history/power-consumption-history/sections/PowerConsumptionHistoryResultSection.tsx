@@ -1,30 +1,31 @@
 import { useMemo, useState } from 'react';
 import type { EChartsOption } from 'echarts';
 import { BaseChart } from '../../../../shared/ui/BaseChart';
-import { BasicTable } from '../../../../shared/ui/BasicTable';
-import { ExcelSaveButton } from '../../../../shared/ui/ExcelSaveButton';
-import type { HistorySearchCriteria } from '../../../../shared/ui/HistorySearchBar';
+import { DataTableCard } from '../../../../shared/ui/DataTableCard';
+import type { SearchConditionCriteria } from '../../../../shared/ui/SearchConditionBar';
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
+import { getHourlyChartMaxWidth, getHourlyChartMinWidth } from '../../../../shared/utils/hourlyChartSlots';
 import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
 import { powerConsumptionHistoryMetrics } from '../constants/powerConsumptionHistoryConfig';
 import type { PowerConsumptionHistoryMetric, PowerConsumptionHistoryMode } from '../types/powerConsumptionHistory';
 import '../styles/PowerConsumptionHistoryResultSection.css';
 
 type PowerConsumptionHistoryResultSectionProps = {
-  searchCriteria: HistorySearchCriteria<PowerConsumptionHistoryMode>;
+  searchCriteria: SearchConditionCriteria<PowerConsumptionHistoryMode>;
   searchedAt: string;
 };
 
 /*
  * 필요: 전력소비 이력의 지표 탭, 차트, 표, 엑셀 저장을 API 데이터로 묶는다.
- * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, BasicTable, ExcelSaveButton.
+ * 연결: useMonitoringHistoryViewData, MetricTabs, BaseChart, DataTableCard.
  * 설명: 전력소비 전용 이력 endpoint 확정 전까지 GRID 이력 API를 기준 데이터로 사용한다.
  * 수정: 결과 영역 간격과 표 위치는 styles/PowerConsumptionHistoryResultSection.css에서 조정한다.
  */
 export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedAt }: PowerConsumptionHistoryResultSectionProps) {
   const [metric, setMetric] = useState<PowerConsumptionHistoryMetric>('Max kWh');
+  const isHourlyChart = searchCriteria.mode !== 'Year' && searchCriteria.mode !== 'Month';
   const historyConfig = useMemo(
     () => ({
       resource: 'grid' as const,
@@ -51,8 +52,7 @@ export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedA
     () => ({
       color: ['#2f9cff', '#f3f6ff'],
       tooltip: { trigger: 'axis' },
-      legend: { bottom: 0, textStyle: { color: '#d6ddea' } },
-      grid: { left: 24, right: 24, top: 30, bottom: 64, containLabel: true },
+      grid: { left: 64, right: 24, top: 30, bottom: 38, containLabel: true },
       xAxis: {
         type: 'category',
         data: data?.labels ?? [],
@@ -61,8 +61,7 @@ export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedA
       },
       yAxis: {
         type: 'value',
-        name: 'Total kWh',
-        nameTextStyle: { color: '#d6ddea' },
+        name: '',
         axisLabel: { color: '#b8c2d8' },
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
       },
@@ -85,7 +84,8 @@ export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedA
   );
 
   return (
-    <PageCard className="power-consumption-history-result">
+    <>
+    <PageCard className="power-consumption-history-result power-consumption-history-result--chart">
       <MetricTabs
         ariaLabel="전력소비 이력 지표"
         value={metric}
@@ -98,22 +98,31 @@ export function PowerConsumptionHistoryResultSection({ searchCriteria, searchedA
       {isLoading && <PageDataLoadingFallback title="전력소비 이력" />}
       {!isLoading && errorMessage && <div role="alert">{errorMessage}</div>}
       {!isLoading && data && (
-        <>
-          <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
-          <div className="power-consumption-history-result__table">
-            <ExcelSaveButton
-              fileName={`전력소비_이력_${searchCriteria.mode}`}
-              sheets={[{ name: '전력소비 이력', headerRows: data.table.headerRows, rows: data.table.rows }]}
-            />
-            <BasicTable
-              ariaLabel={data.table.ariaLabel}
-              headerRows={data.table.headerRows}
-              rows={data.table.rows}
-              minWidth={data.table.minWidth}
-            />
-          </div>
-        </>
+          <BaseChart
+            option={chartOption}
+            height={420}
+            minWidth={isHourlyChart ? getHourlyChartMinWidth(data.labels.length) : 1120}
+            maxWidth={isHourlyChart ? getHourlyChartMaxWidth(data.labels.length) : undefined}
+            scrollable
+            scrollToCurrentTime={isHourlyChart && data.labels.length <= 24}
+            yAxisLabel="Total kWh"
+            legendItems={[
+              { name: '유효전력', type: 'bar', color: '#2f9cff' },
+              { name: '무효전력', type: 'line', color: '#f3f6ff' }
+            ]}
+          />
       )}
     </PageCard>
+      {!isLoading && data && (
+        <DataTableCard
+          className="power-consumption-history-result__table-card"
+          ariaLabel={data.table.ariaLabel}
+          headerRows={data.table.headerRows}
+          rows={data.table.rows}
+          minWidth={data.table.minWidth}
+          excel={{ fileName: `전력소비_이력_${searchCriteria.mode}`, sheetName: '전력소비 이력' }}
+        />
+      )}
+    </>
   );
 }

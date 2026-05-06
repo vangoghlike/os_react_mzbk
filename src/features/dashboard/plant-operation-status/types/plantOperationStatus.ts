@@ -183,8 +183,20 @@ export type PlantOperationInverterData = {
   label: string;
 };
 
+/*
+ * 필요: API targetList를 카드 내부 조회 대상 셀렉트로 전달한다.
+ * 연결: plantOperationStatusAdapter, PlantOperationDiagramSection.
+ * 설명: 선택값은 targetId로 유지하고, 화면에는 targetName만 노출한다.
+ * 수정: detail API를 연결할 때 이 targetId를 조회 인자로 사용한다.
+ */
+export type PlantOperationTargetOption = {
+  targetId: string;
+  targetName: string;
+};
+
 export type PlantOperationStatusData = {
   banks: PlantOperationBankData[];
+  targetOptions: PlantOperationTargetOption[];
   topAuxiliaryTables: PlantOperationTopologyTableData[];
   btb: PlantOperationPowerPanelData;
   solar: PlantOperationPowerPanelData;

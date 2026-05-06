@@ -10,6 +10,48 @@
   overflow: hidden;
 }
 
+.plant-operation-card .card__header {
+  align-items: center;
+}
+
+.plant-operation-card .card__actions {
+  flex: 0 0 auto;
+}
+
+.plant-operation-card__target-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  font-weight: 300;
+}
+
+.plant-operation-card__target-field select {
+  width: 180px;
+  height: 45px;
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  background-color: var(--control-bg);
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 18px center;
+  color: var(--text-white);
+  padding: 0 46px 0 18px;
+  appearance: none;
+  outline: none;
+}
+
+.plant-operation-card__target-field select:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(var(--primary-blue-rgb), 0.18);
+}
+
+.plant-operation-card__target-field option {
+  color: var(--text-white);
+  background-color: var(--control-bg);
+}
+
 .plant-operation-card .card__body {
   height: calc(100% - 72px);
   padding: 24px;
@@ -39,9 +81,9 @@
   overflow: auto;
   overscroll-behavior: contain;
   border-radius: 22px;
-  background: var(--panel-bg);
+  background: #1f1f23;
   cursor: grab;
-  scrollbar-color: rgba(150, 160, 182, 0.64) rgba(255, 255, 255, 0.06);
+  scrollbar-color: rgba(150, 160, 182, 0.34) rgba(255, 255, 255, 0.03);
   scrollbar-width: thin;
 }
 
@@ -66,13 +108,17 @@
 }
 
 .plant-operation-canvas {
-  --topology-line: var(--panel-line-blue);
-  --topology-cell-line: rgba(255, 255, 255, 0.32);
-  --topology-table-bg: linear-gradient(135deg, rgba(18, 24, 35, 0.94), rgba(10, 20, 33, 0.94));
+  --topology-line: #1c65ac;
+  --topology-cell-line: rgba(120, 120, 120, 0.86);
+  --topology-cell-border-width: 1.5px;
+  --topology-table-border: #1988fa;
+  --topology-table-bg: linear-gradient(125deg, rgba(0, 0, 0, 0.7), rgba(18, 31, 42, 0.7));
+  --topology-pill-bg: #12131a;
+  --topology-pill-border: #787878;
   width: max-content;
   min-width: 100%;
   min-height: 100%;
-  padding: 72px 80px 88px;
+  padding: 58px 80px 76px;
   color: var(--text-white);
 }
 
@@ -101,7 +147,7 @@
   fill: none;
   stroke: var(--topology-line);
   stroke-width: 2px;
-  stroke-dasharray: 4 6;
+  stroke-dasharray: 2 5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -131,9 +177,23 @@
   overflow: hidden;
   color: var(--text-white);
   background: var(--topology-table-bg);
-  border: 2px solid var(--topology-line);
-  border-radius: 14px;
+  border: 0;
+  border-radius: 11px;
   user-select: text;
+}
+
+.plant-operation-bank-table::after,
+.plant-operation-simple-table::after,
+.plant-operation-power-table::after,
+.plant-operation-pcs-table::after,
+.plant-operation-battery-table::after,
+.plant-operation-generator-table::after {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--topology-table-border);
+  border-radius: 11px;
+  content: '';
+  pointer-events: none;
 }
 
 .plant-operation-bank-table th,
@@ -148,14 +208,14 @@
 .plant-operation-battery-table td,
 .plant-operation-generator-table th,
 .plant-operation-generator-table td {
-  padding: 0 14px;
+  padding: 0 13px;
   text-align: center;
   vertical-align: middle;
-  border-right: 1px solid var(--topology-cell-line);
-  border-bottom: 1px solid var(--topology-cell-line);
-  font-size: 1rem;
-  font-weight: 300;
-  line-height: 1.25;
+  border-right: var(--topology-cell-border-width) solid var(--topology-cell-line);
+  border-bottom: var(--topology-cell-border-width) solid var(--topology-cell-line);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -163,6 +223,35 @@
 
 .plant-operation-bank-table thead th {
   font-weight: 700;
+}
+
+.plant-operation-bank-table thead {
+  height: 33.333%;
+}
+
+.plant-operation-bank-table tbody {
+  height: 66.667%;
+}
+
+.plant-operation-bank-table tbody tr {
+  height: 50%;
+}
+
+.plant-operation-simple-table tr,
+.plant-operation-power-table tr,
+.plant-operation-pcs-table tr,
+.plant-operation-battery-table tr,
+.plant-operation-generator-table tr {
+  height: calc(100% / var(--topology-row-count, 1));
+}
+
+.plant-operation-bank-table tr > :first-child {
+  width: 28%;
+}
+
+.plant-operation-bank-table tr > :nth-child(2),
+.plant-operation-bank-table tr > :nth-child(3) {
+  width: 36%;
 }
 
 .plant-operation-bank-table tr > :last-child,
@@ -189,17 +278,20 @@
   min-height: 0;
   align-self: center;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border: 1px solid var(--topology-pill-border);
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-white);
-  background: rgba(10, 13, 22, 0.96);
+  background: var(--topology-pill-bg);
   font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: 0;
   user-select: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .plant-operation-node-pill--bank {
@@ -220,57 +312,110 @@
 
 .plant-operation-simple-table--bank-collector-left th,
 .plant-operation-simple-table--bank-collector-left td {
-  width: 50%;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.plant-operation-simple-table--bank-collector-left th {
+  width: 62%;
+}
+
+.plant-operation-simple-table--bank-collector-left td {
+  width: 38%;
 }
 
 .plant-operation-power-table th {
   min-width: 0;
   padding: 0 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .plant-operation-power-table td {
   min-width: 0;
   padding: 0 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .plant-operation-power-table__pf-label {
+  width: 12%;
   min-width: 0;
+  border-left: var(--topology-cell-border-width) solid var(--topology-cell-line);
+  border-bottom: 0;
 }
 
 .plant-operation-power-table__pf-value {
+  width: 14%;
   min-width: 0;
+  border-bottom: 0;
+}
+
+.plant-operation-power-table tr > :first-child {
+  width: 32%;
+}
+
+.plant-operation-power-table tr > :nth-child(2) {
+  width: 42%;
 }
 
 .plant-operation-pcs-table th,
 .plant-operation-pcs-table td {
   width: 50%;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 500;
 }
 
 .plant-operation-battery-table th,
 .plant-operation-battery-table td {
   min-width: 0;
-  padding: 0 4px;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  padding: 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.plant-operation-battery-table thead {
+  height: 66.667%;
+}
+
+.plant-operation-battery-table thead tr {
+  height: 50%;
+}
+
+.plant-operation-battery-table tbody {
+  height: 33.333%;
+}
+
+.plant-operation-battery-table tbody tr {
+  height: 100%;
 }
 
 .plant-operation-generator-table th,
 .plant-operation-generator-table td {
-  height: 26px;
-  padding: 0 4px;
-  font-size: 0.625rem;
-  font-weight: 700;
+  padding: 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.plant-operation-generator-table th {
+  width: 54%;
+}
+
+.plant-operation-generator-table td {
+  width: 46%;
 }
 
 @media (max-width: 920px) {
+  .plant-operation-card__target-field,
+  .plant-operation-card__target-field select {
+    width: 100%;
+  }
+
+  .plant-operation-card__target-field {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .plant-operation-card .card__body {
     padding: 16px;
   }

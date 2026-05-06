@@ -1,5 +1,12 @@
 import { useMemo } from 'react';
 import type { EChartsOption } from 'echarts';
+import { EMPTY_API_VALUE } from '../api/apiDataUtils';
+import {
+  FULL_DAY_TIME_CHART_MAX_WIDTH,
+  FULL_DAY_TIME_CHART_MIN_WIDTH,
+  FULL_DAY_TIME_LABELS,
+  normalizeHourLabel
+} from '../utils/hourlyChartSlots';
 import { BaseChart } from './BaseChart';
 import { PageCard } from './PageCard';
 import { SummaryMatrix, type SummaryMatrixMetric } from './SummaryMatrix';
@@ -27,7 +34,7 @@ export type ChartSummaryDonutItem = {
 export type ChartSummarySeries = {
   name: string;
   type: 'bar' | 'line';
-  data: number[];
+  data: Array<number | null>;
   color?: string;
   stack?: string;
   barWidth?: number;
@@ -50,6 +57,43 @@ export type ChartSummaryPanelProps = {
   chartMinWidth?: number;
   className?: string;
 };
+
+function isHourlyLabel(label: string) {
+  return normalizeHourLabel(label) !== EMPTY_API_VALUE;
+}
+
+function buildFullDayChartSeries(chartLabels: string[], chartSeries: ChartSummarySeries[]) {
+  if (!chartLabels.some(isHourlyLabel)) {
+    return {
+      labels: chartLabels,
+      series: chartSeries,
+      isHourly: false
+    };
+  }
+
+  const indexByHour = new Map<string, number>();
+
+  chartLabels.forEach((label, index) => {
+    const hourLabel = normalizeHourLabel(label);
+
+    if (hourLabel !== EMPTY_API_VALUE && !indexByHour.has(hourLabel)) {
+      indexByHour.set(hourLabel, index);
+    }
+  });
+
+  return {
+    labels: FULL_DAY_TIME_LABELS,
+    series: chartSeries.map((series) => ({
+      ...series,
+      data: FULL_DAY_TIME_LABELS.map((hourLabel) => {
+        const sourceIndex = indexByHour.get(hourLabel);
+
+        return sourceIndex === undefined ? null : series.data[sourceIndex] ?? null;
+      })
+    })),
+    isHourly: true
+  };
+}
 
 /*
  * 필요: 도넛, 요약표, 막대/선 그래프 조합을 하나의 공통 패널로 렌더링한다.
@@ -75,6 +119,28 @@ export function ChartSummaryPanel({
   const getSeriesColor = (series: ChartSummarySeries, index: number) =>
     series.color ?? donutColors[index % donutColors.length] ?? '#25b6fe';
   const summaryMinWidth = summaryColumns.length >= 8 ? 1160 : 880;
+  const fullDayChart = useMemo(
+    () => buildFullDayChartSeries(chartLabels, chartSeries),
+    [chartLabels, chartSeries]
+  );
+  const donutLegendItems = useMemo(
+    () =>
+      donutLegendLabels.map((name, index) => ({
+        name,
+        type: 'bar' as const,
+        color: donutColors[index % donutColors.length]
+      })),
+    [donutColors, donutLegendLabels]
+  );
+  const chartLegendItems = useMemo(
+    () =>
+      chartSeries.map((series, index) => ({
+        name: series.name,
+        type: series.type,
+        color: series.color ?? donutColors[index % donutColors.length] ?? '#25b6fe'
+      })),
+    [chartSeries, donutColors]
+  );
 
   const donutOption = useMemo<EChartsOption>(
     () => ({
@@ -82,6 +148,7 @@ export function ChartSummaryPanel({
       color: donutColors,
       tooltip: { trigger: 'item' },
       legend: {
+        show: false,
         bottom: 0,
         data: donutLegendLabels,
         selectedMode: true,
@@ -119,19 +186,10 @@ export function ChartSummaryPanel({
           lineStyle: { color: 'rgba(215, 216, 216, 0.82)', type: 'dashed', width: 1 }
         }
       },
-      legend: {
-        bottom: 0,
-        selectedMode: true,
-        inactiveColor: 'rgba(214, 221, 234, 0.38)',
-        itemWidth: 20,
-        itemHeight: 10,
-        itemGap: 18,
-        textStyle: { color: '#d6ddea', fontFamily: CHART_FONT_FAMILY, fontSize: 13, fontWeight: 300 }
-      },
-      grid: { left: 50, right: 24, top: 34, bottom: 76, containLabel: false },
+      grid: { left: 50, right: 24, top: 34, bottom: 34, containLabel: false },
       xAxis: {
         type: 'category',
-        data: chartLabels,
+        data: fullDayChart.labels,
         axisTick: { show: false },
         axisLabel: { color: '#b8c2d8', fontFamily: CHART_FONT_FAMILY, fontSize: 13, fontWeight: 300 },
         axisLine: { lineStyle: { color: '#354057' } }
@@ -144,7 +202,7 @@ export function ChartSummaryPanel({
         axisLine: { show: false },
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
       },
-      series: chartSeries.map((series, seriesIndex) => {
+      series: fullDayChart.series.map((series, seriesIndex) => {
         const seriesColor = getSeriesColor(series, seriesIndex);
 
         return series.type === 'bar'
@@ -187,7 +245,7 @@ export function ChartSummaryPanel({
             };
       })
     }),
-    [chartLabels, chartSeries, chartYAxisName, donutColors]
+    [fullDayChart.labels, fullDayChart.series, chartYAxisName, donutColors]
   );
 
   return (
@@ -195,7 +253,11 @@ export function ChartSummaryPanel({
       <div className="chart-summary-panel__top">
         <div className="chart-summary-panel__donut">
           <h3>{donutTitle}</h3>
-          <BaseChart option={donutOption} height={330} />
+          <BaseChart
+            option={donutOption}
+            height={330}
+            legendItems={donutLegendItems}
+          />
         </div>
 
         <SummaryMatrix
@@ -213,7 +275,15 @@ export function ChartSummaryPanel({
             <span key={text}>{text}</span>
           ))}
         </span>
-        <BaseChart option={chartOption} height={chartHeight} minWidth={chartMinWidth} scrollable />
+        <BaseChart
+          option={chartOption}
+          height={chartHeight}
+          minWidth={fullDayChart.isHourly ? FULL_DAY_TIME_CHART_MIN_WIDTH : chartMinWidth}
+          maxWidth={fullDayChart.isHourly ? FULL_DAY_TIME_CHART_MAX_WIDTH : undefined}
+          scrollable
+          scrollToCurrentTime={fullDayChart.isHourly}
+          legendItems={chartLegendItems}
+        />
       </div>
     </PageCard>
   );

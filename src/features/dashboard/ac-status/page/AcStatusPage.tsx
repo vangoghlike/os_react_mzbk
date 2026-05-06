@@ -5,8 +5,41 @@ import { BaseChart } from '../../../../shared/ui/BaseChart';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
 import { PageHeading } from '../../../../shared/ui/PageHeading';
+import { EMPTY_API_VALUE } from '../../../../shared/api/apiDataUtils';
+import {
+  FULL_DAY_TIME_CHART_MAX_WIDTH,
+  FULL_DAY_TIME_CHART_MIN_WIDTH,
+  FULL_DAY_TIME_LABELS,
+  normalizeHourLabel
+} from '../../../../shared/utils/hourlyChartSlots';
 import { useAcStatus } from '../hooks/useAcStatus';
 import '../styles/AcStatusPage.css';
+
+function buildFullDayAcChart(data: ReturnType<typeof useAcStatus>['data']) {
+  const indexByHour = new Map<string, number>();
+
+  data?.chart.labels.forEach((label, index) => {
+    const hourLabel = normalizeHourLabel(label);
+
+    if (hourLabel !== EMPTY_API_VALUE && !indexByHour.has(hourLabel)) {
+      indexByHour.set(hourLabel, index);
+    }
+  });
+
+  const mapSeries = (series: number[]) =>
+    FULL_DAY_TIME_LABELS.map((hourLabel) => {
+      const sourceIndex = indexByHour.get(hourLabel);
+
+      return sourceIndex === undefined ? null : series[sourceIndex] ?? null;
+    });
+
+  return {
+    labels: FULL_DAY_TIME_LABELS,
+    supplyTemperatureSeries: mapSeries(data?.chart.supplyTemperatureSeries ?? []),
+    returnTemperatureSeries: mapSeries(data?.chart.returnTemperatureSeries ?? []),
+    humiditySeries: mapSeries(data?.chart.humiditySeries ?? [])
+  };
+}
 
 /*
  * 필요: /monitoring/ac 공조기 현황을 대시보드와 분리해 표시한다.
@@ -16,16 +49,16 @@ import '../styles/AcStatusPage.css';
  */
 export function AcStatusPage() {
   const { data, isLoading, errorMessage } = useAcStatus();
+  const fullDayChart = useMemo(() => buildFullDayAcChart(data), [data]);
 
   const chartOption = useMemo<EChartsOption>(
     () => ({
       color: ['#25b6fe', '#f3f6ff', '#6cd6d0'],
       tooltip: { trigger: 'axis' },
-      legend: { bottom: 0, textStyle: { color: '#d6ddea', fontWeight: 300 } },
-      grid: { left: 48, right: 28, top: 36, bottom: 72, containLabel: false },
+      grid: { left: 48, right: 28, top: 36, bottom: 34, containLabel: false },
       xAxis: {
         type: 'category',
-        data: data?.chart.labels ?? [],
+        data: fullDayChart.labels,
         axisTick: { show: false },
         axisLabel: { color: '#b8c2d8' },
         axisLine: { lineStyle: { color: '#354057' } }
@@ -38,12 +71,12 @@ export function AcStatusPage() {
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
       },
       series: [
-        { name: '급기 온도', type: 'line', smooth: false, data: data?.chart.supplyTemperatureSeries ?? [] },
-        { name: '환기 온도', type: 'line', smooth: false, data: data?.chart.returnTemperatureSeries ?? [] },
-        { name: '습도', type: 'bar', barWidth: 36, data: data?.chart.humiditySeries ?? [] }
+        { name: '급기 온도', type: 'line', smooth: false, data: fullDayChart.supplyTemperatureSeries },
+        { name: '환기 온도', type: 'line', smooth: false, data: fullDayChart.returnTemperatureSeries },
+        { name: '습도', type: 'bar', barWidth: 36, data: fullDayChart.humiditySeries }
       ]
     }),
-    [data]
+    [fullDayChart]
   );
 
   return (
@@ -71,7 +104,19 @@ export function AcStatusPage() {
           </PageCard>
 
           <PageCard title="공조기 온도/습도 추이">
-            <BaseChart option={chartOption} height={420} minWidth={1120} scrollable />
+            <BaseChart
+              option={chartOption}
+              height={420}
+              minWidth={FULL_DAY_TIME_CHART_MIN_WIDTH}
+              maxWidth={FULL_DAY_TIME_CHART_MAX_WIDTH}
+              scrollable
+              scrollToCurrentTime
+              legendItems={[
+                { name: '급기 온도', type: 'line', color: '#25b6fe' },
+                { name: '환기 온도', type: 'line', color: '#f3f6ff' },
+                { name: '습도', type: 'bar', color: '#6cd6d0' }
+              ]}
+            />
           </PageCard>
 
           <PageCard title="공조기 상세 현황">

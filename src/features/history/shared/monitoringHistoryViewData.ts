@@ -7,12 +7,14 @@ import {
   getTimeLabel,
   readApiField,
   sortByDateTime,
+  toNumber,
   toChartNumber
 } from '../../../shared/api/apiDataUtils';
 import type { ApiRecord } from '../../../shared/api/apiDataUtils';
-import { getPageContents, monitoringApi, type MonitoringResource } from '../../../shared/api/monitoringApi';
+import { getPageContents, monitoringApi, type MonitoringResource, type MonitoringSearchRequest } from '../../../shared/api/monitoringApi';
 import type { TableHeaderCell, TableRow } from '../../../shared/types/table';
-import type { HistorySearchCriteria } from '../../../shared/ui/HistorySearchBar';
+import type { SearchConditionCriteria } from '../../../shared/ui/SearchConditionBar';
+import { FULL_DAY_TIME_LABELS, getHourlySlotLabel, normalizeHourLabel } from '../../../shared/utils/hourlyChartSlots';
 
 type HistoryField = {
   label: string;
@@ -27,13 +29,13 @@ export type MonitoringHistoryConfig<TMetric extends string, TMode extends string
   barField: string;
   lineField?: string;
   fields: HistoryField[];
-  searchCriteria: HistorySearchCriteria<TMode>;
+  searchCriteria: SearchConditionCriteria<TMode>;
 };
 
 export type MonitoringHistoryViewData<TMetric extends string> = {
   labels: string[];
-  barSeriesByMetric: Record<TMetric, number[]>;
-  lineSeriesByMetric: Record<TMetric, number[]>;
+  barSeriesByMetric: Record<TMetric, Array<number | null>>;
+  lineSeriesByMetric: Record<TMetric, Array<number | null>>;
   metricTabs: readonly TMetric[];
   table: {
     ariaLabel: string;
@@ -49,29 +51,300 @@ type MonitoringHistoryState<TMetric extends string> = {
   errorMessage: string;
 };
 
-function getReportType(mode: string) {
-  if (mode === 'Year') return 'YEARLY';
-  if (mode === 'Month') return 'MONTHLY';
-
-  return 'DAILY';
+function normalizeDateLabel(date: string) {
+  return date.replace(/-/g, '.');
 }
 
-function getLabel(row: ApiRecord) {
+function normalizeDateKey(value: string | undefined) {
+  const match = String(value ?? '').match(/(\d{4})[-.](\d{2})[-.](\d{2})/);
+
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
+}
+
+function formatDateKey(dateKey: string) {
+  return dateKey.replace(/-/g, '.');
+}
+
+function parseDateKey(dateKey: string | undefined) {
+  const normalizedKey = normalizeDateKey(dateKey);
+  const date = normalizedKey ? new Date(`${normalizedKey}T00:00:00`) : null;
+
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+
+  return nextDate;
+}
+
+function getInclusiveDays(startDate: Date, endDate: Date) {
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+  return Math.floor((endDate.getTime() - startDate.getTime()) / millisecondsPerDay) + 1;
+}
+
+function buildPeriodChunks(startDate?: string, endDate?: string, maxDays = 30) {
+  const start = parseDateKey(startDate);
+  const end = parseDateKey(endDate);
+
+  if (!start || !end || start > end) {
+    return [];
+  }
+
+  const chunks: Array<{ startDate: string; endDate: string }> = [];
+  let currentStart = new Date(start);
+
+  while (currentStart <= end) {
+    const currentEnd = addDays(currentStart, maxDays - 1);
+    const chunkEnd = currentEnd < end ? currentEnd : new Date(end);
+    chunks.push({ startDate: toDateKey(currentStart), endDate: toDateKey(chunkEnd) });
+    currentStart = addDays(chunkEnd, 1);
+  }
+
+  const lastChunk = chunks.at(-1);
+  const previousChunk = chunks.at(-2);
+
+  if (chunks.length > 1 && lastChunk && previousChunk) {
+    const lastStart = parseDateKey(lastChunk.startDate);
+    const lastEnd = parseDateKey(lastChunk.endDate);
+    const previousEnd = parseDateKey(previousChunk.endDate);
+
+    if (lastStart && lastEnd && previousEnd && getInclusiveDays(lastStart, lastEnd) === 1) {
+      const movedDate = addDays(previousEnd, -1);
+      previousChunk.endDate = toDateKey(movedDate);
+      lastChunk.startDate = toDateKey(previousEnd);
+    }
+  }
+
+  return chunks;
+}
+
+function buildHistoryQueries(criteria: SearchConditionCriteria<string>): MonitoringSearchRequest[] {
+  const periodChunks = buildPeriodChunks(criteria.startDate, criteria.endDate);
+  const isSingleDay = normalizeDateKey(criteria.startDate) === normalizeDateKey(criteria.endDate);
+  const outputUnit: MonitoringSearchRequest['outputUnit'] = criteria.mode === 'Year' ? 'MONTH' : isSingleDay ? 'HOUR' : 'DAY';
+
+  if (periodChunks.length === 0) {
+    return [
+      {
+        startDate: criteria.startDate,
+        endDate: criteria.endDate,
+        periodType: 'PERIOD',
+        outputUnit,
+        page: 1,
+        size: 500
+      }
+    ];
+  }
+
+  return periodChunks.map((chunk) => ({
+    ...chunk,
+    periodType: 'PERIOD',
+    outputUnit,
+    page: 1,
+    size: 500
+  }));
+}
+
+function getDateKeyRange(startDate?: string, endDate?: string) {
+  const startKey = normalizeDateKey(startDate);
+  const endKey = normalizeDateKey(endDate);
+
+  if (!startKey || !endKey) {
+    return [];
+  }
+
+  const start = new Date(`${startKey}T00:00:00`);
+  const end = new Date(`${endKey}T00:00:00`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    return [];
+  }
+
+  const keys: string[] = [];
+  const current = new Date(start);
+
+  while (current <= end && keys.length < 370) {
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, '0');
+    const day = String(current.getDate()).padStart(2, '0');
+    keys.push(`${year}-${month}-${day}`);
+    current.setDate(current.getDate() + 1);
+  }
+
+  return keys;
+}
+
+function getLabel(row: ApiRecord, mode: string) {
   const date = getDateLabel(row);
   const time = getTimeLabel(row);
 
-  if (date !== EMPTY_API_VALUE) {
-    return time !== EMPTY_API_VALUE ? `${date} ${time}` : date;
+  if (date === EMPTY_API_VALUE) {
+    return time;
   }
 
-  return time;
+  if (mode === 'Year') {
+    return normalizeDateLabel(date.slice(0, 7));
+  }
+
+  if (mode === 'Month') {
+    return normalizeDateLabel(date);
+  }
+
+  return time !== EMPTY_API_VALUE ? `${normalizeDateLabel(date)} ${time}` : normalizeDateLabel(date);
 }
 
-function buildSeriesByMetric<TMetric extends string>(metrics: readonly TMetric[], rows: ApiRecord[], field: string) {
-  return metrics.reduce<Record<TMetric, number[]>>((seriesByMetric, metric) => {
-    seriesByMetric[metric] = rows.map((row) => toChartNumber(readApiField(row, field)));
+function average(values: number[]) {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function min(values: number[]) {
+  return values.length > 0 ? Math.min(...values) : 0;
+}
+
+function max(values: number[]) {
+  return values.length > 0 ? Math.max(...values) : 0;
+}
+
+function getMetricSuffix(metric: string) {
+  if (metric.startsWith('Min')) return 'min';
+  if (metric.startsWith('AVG')) return 'avg';
+
+  return 'max';
+}
+
+function getMetricField(field: string, metric: string) {
+  return `${field}__${getMetricSuffix(metric)}`;
+}
+
+function getMetricSourceField(metric: string, defaultField: string, dischargeField?: string) {
+  if (metric.includes(' D ') && dischargeField) {
+    return dischargeField;
+  }
+
+  return defaultField;
+}
+
+function groupRowsByLabel(rows: ApiRecord[], mode: string, fields: HistoryField[]) {
+  const groups = new Map<string, ApiRecord[]>();
+
+  rows.forEach((row) => {
+    const label = getLabel(row, mode);
+    const currentRows = groups.get(label) ?? [];
+    currentRows.push(row);
+    groups.set(label, currentRows);
+  });
+
+  return Array.from(groups.entries()).map(([label, groupedRows]) => {
+    const firstRow = groupedRows[0] ?? {};
+    const groupedRecord: ApiRecord = {
+      label,
+      esmtOperYmd: getDateLabel(firstRow),
+      esmtOperTime: getTimeLabel(firstRow)
+    };
+
+    fields.forEach((field) => {
+      const values = groupedRows.map((row) => toChartNumber(readApiField(row, field.key)));
+      groupedRecord[field.key] = average(values);
+      groupedRecord[getMetricField(field.key, 'Max')] = max(values);
+      groupedRecord[getMetricField(field.key, 'Min')] = min(values);
+      groupedRecord[getMetricField(field.key, 'AVG')] = average(values);
+    });
+
+    return groupedRecord;
+  });
+}
+
+function buildSeriesByMetric<TMetric extends string>(metrics: readonly TMetric[], rows: ApiRecord[], field: string, dischargeField?: string) {
+  return metrics.reduce<Record<TMetric, Array<number | null>>>((seriesByMetric, metric) => {
+    const sourceField = getMetricSourceField(metric, field, dischargeField);
+    seriesByMetric[metric] = rows.map((row) => toChartNumber(readApiField(row, getMetricField(sourceField, metric))));
     return seriesByMetric;
-  }, {} as Record<TMetric, number[]>);
+  }, {} as Record<TMetric, Array<number | null>>);
+}
+
+function getHourlyDateKeys(rows: ApiRecord[], fallbackStartDate?: string, fallbackEndDate?: string) {
+  const rangeKeys = getDateKeyRange(fallbackStartDate, fallbackEndDate);
+
+  if (rangeKeys.length > 0) {
+    return rangeKeys;
+  }
+
+  const rowKeys = Array.from(
+    new Set(
+      rows
+        .map((row) => normalizeDateKey(String(row.label ?? '')) || normalizeDateKey(getDateLabel(row)))
+        .filter(Boolean)
+    )
+  );
+
+  return rowKeys.length > 0 ? rowKeys : [normalizeDateKey(fallbackStartDate) || normalizeDateKey(fallbackEndDate)].filter(Boolean);
+}
+
+function isHourlyChartMode(mode: string, startDate?: string, endDate?: string) {
+  return mode !== 'Year' && mode !== 'Month' && normalizeDateKey(startDate) === normalizeDateKey(endDate);
+}
+
+function buildHourlyChartRows(rows: ApiRecord[], mode: string, fallbackStartDate?: string, fallbackEndDate?: string) {
+  if (!isHourlyChartMode(mode, fallbackStartDate, fallbackEndDate)) {
+    return rows;
+  }
+
+  const dateKeys = getHourlyDateKeys(rows, fallbackStartDate, fallbackEndDate);
+  const rowsBySlot = new Map<string, ApiRecord>();
+
+  rows.forEach((row) => {
+    const dateKey = normalizeDateKey(String(row.label ?? '')) || normalizeDateKey(getDateLabel(row)) || normalizeDateKey(fallbackStartDate);
+    const hourLabel = normalizeHourLabel(String(row.label ?? getTimeLabel(row)));
+    const slotKey = `${dateKey} ${hourLabel}`;
+
+    if (dateKey && hourLabel !== EMPTY_API_VALUE && !rowsBySlot.has(slotKey)) {
+      rowsBySlot.set(slotKey, row);
+    }
+  });
+
+  return dateKeys.flatMap((dateKey) =>
+    FULL_DAY_TIME_LABELS.map((timeLabel) => {
+      const displayDate = formatDateKey(dateKey);
+      const row = rowsBySlot.get(`${dateKey} ${timeLabel}`);
+
+      if (row) {
+        return {
+          ...row,
+          label: getHourlySlotLabel(displayDate, timeLabel)
+        };
+      }
+
+      // 차트 축은 조회 기간의 날짜별 24시간을 모두 보여주되, 없는 시간대 값은 API 값이 없음을 null로 유지한다.
+      return {
+        label: getHourlySlotLabel(displayDate, timeLabel),
+        esmtOperYmd: dateKey,
+        esmtOperTime: timeLabel
+      };
+    })
+  );
+}
+
+function buildHourlySeriesByMetric<TMetric extends string>(metrics: readonly TMetric[], rows: ApiRecord[], field: string, dischargeField?: string) {
+  return metrics.reduce<Record<TMetric, Array<number | null>>>((seriesByMetric, metric) => {
+    const sourceField = getMetricSourceField(metric, field, dischargeField);
+    seriesByMetric[metric] = rows.map((row) => toNumber(readApiField(row, getMetricField(sourceField, metric))));
+    return seriesByMetric;
+  }, {} as Record<TMetric, Array<number | null>>);
 }
 
 function buildHistoryViewData<TMetric extends string, TMode extends string>(
@@ -79,13 +352,28 @@ function buildHistoryViewData<TMetric extends string, TMode extends string>(
   rows: ApiRecord[]
 ): MonitoringHistoryViewData<TMetric> {
   const sortedRows = sortByDateTime(rows);
+  const valueFields = [
+    { label: 'BAR', key: config.barField },
+    { label: 'LINE', key: config.lineField ?? config.barField },
+    ...config.fields
+  ];
+  const groupedRows = groupRowsByLabel(sortedRows, config.searchCriteria.mode, valueFields);
+  const chartRows = buildHourlyChartRows(groupedRows, config.searchCriteria.mode, config.searchCriteria.startDate, config.searchCriteria.endDate);
+  const labels = chartRows.map((row) => String(row.label ?? EMPTY_API_VALUE));
   const headerRows: TableHeaderCell[][] = [[{ label: 'DATE' }, ...config.fields.map((field) => ({ label: field.label }))]];
-  const tableRows = sortedRows.map((row) => [getLabel(row), ...config.fields.map((field) => formatApiNumber(readApiField(row, field.key)))]);
+  const tableRows = groupedRows.map((row) => [
+    String(row.label ?? EMPTY_API_VALUE),
+    ...config.fields.map((field) => formatApiNumber(readApiField(row, field.key)))
+  ]);
 
   return {
-    labels: sortedRows.map((row) => getLabel(row)),
-    barSeriesByMetric: buildSeriesByMetric(config.metrics, sortedRows, config.barField),
-    lineSeriesByMetric: buildSeriesByMetric(config.metrics, sortedRows, config.lineField ?? config.barField),
+    labels,
+    barSeriesByMetric: isHourlyChartMode(config.searchCriteria.mode, config.searchCriteria.startDate, config.searchCriteria.endDate)
+      ? buildHourlySeriesByMetric(config.metrics, chartRows, config.barField, config.lineField)
+      : buildSeriesByMetric(config.metrics, chartRows, config.barField, config.lineField),
+    lineSeriesByMetric: isHourlyChartMode(config.searchCriteria.mode, config.searchCriteria.startDate, config.searchCriteria.endDate)
+      ? buildHourlySeriesByMetric(config.metrics, chartRows, config.lineField ?? config.barField)
+      : buildSeriesByMetric(config.metrics, chartRows, config.lineField ?? config.barField),
     metricTabs: config.metrics,
     table: {
       ariaLabel: config.tableTitle,
@@ -97,10 +385,10 @@ function buildHistoryViewData<TMetric extends string, TMode extends string>(
 }
 
 /*
- * 필요: 이력 화면들이 동일한 조회/변환 흐름으로 API 데이터를 사용하게 한다.
- * 연결: GRID/PCS/보조/전력 소비 이력 ResultSection.
- * 설명: resource와 필드 목록만 화면별로 받고, loading/error/table/chart 계약은 공통으로 유지한다.
- * 수정: 전용 이력 endpoint나 필드가 바뀌면 각 화면 config의 resource/fields만 조정한다.
+ * 필요: 이력 화면들이 같은 조회/변환 흐름으로 API 데이터를 사용하게 한다.
+ * 연결: monitoring history API, history result sections, 공통 차트/테이블.
+ * 설명: resource와 필드 목록만 화면별로 받고 로딩, 오류, 기간별 집계는 공통 처리한다.
+ * 수정: API 필드가 변경되면 각 화면 config의 resource/fields만 조정한다.
  */
 export function useMonitoringHistoryViewData<TMetric extends string, TMode extends string>(
   config: MonitoringHistoryConfig<TMetric, TMode>
@@ -111,14 +399,8 @@ export function useMonitoringHistoryViewData<TMetric extends string, TMode exten
     errorMessage: ''
   });
 
-  const query = useMemo(
-    () => ({
-      startDate: config.searchCriteria.startDate,
-      endDate: config.searchCriteria.endDate,
-      reportType: getReportType(config.searchCriteria.mode),
-      page: 1,
-      size: 200
-    }),
+  const queries = useMemo(
+    () => buildHistoryQueries(config.searchCriteria),
     [config.searchCriteria.endDate, config.searchCriteria.mode, config.searchCriteria.startDate]
   );
 
@@ -129,8 +411,8 @@ export function useMonitoringHistoryViewData<TMetric extends string, TMode exten
       setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
 
       try {
-        const response = await monitoringApi.getHistory<ApiRecord>(config.resource, query);
-        const rows = getPageContents(response);
+        const responses = await Promise.all(queries.map((query) => monitoringApi.getHistory<ApiRecord>(config.resource, query)));
+        const rows = responses.flatMap((response) => getPageContents(response));
         const data = buildHistoryViewData(config, rows);
 
         if (!mounted) {
@@ -153,7 +435,7 @@ export function useMonitoringHistoryViewData<TMetric extends string, TMode exten
     return () => {
       mounted = false;
     };
-  }, [config, query]);
+  }, [config, queries]);
 
   return state;
 }

@@ -79,7 +79,7 @@ export function Sidebar({ collapsed, onRequestExpand, onRequestClose, onNavigate
   return (
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`.trim()}>
       <div className="sidebar__top">
-        <NavLink to="/monitoring/dashboard" className="sidebar__brand" aria-label="대시보드로 이동" onClick={onNavigate}>
+        <NavLink to="/monitoring/dashboard/plant" className="sidebar__brand" aria-label="대시보드로 이동" onClick={onNavigate}>
           <img src={commonLogoSources.sidebarBrand.src} alt={commonLogoSources.sidebarBrand.alt} className="sidebar__logo" />
         </NavLink>
 

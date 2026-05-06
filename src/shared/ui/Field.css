@@ -5,8 +5,16 @@
 }
 
 .field__label {
-  color: var(--text-muted);
+  color: #7e879d;
   font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.43;
+}
+
+.field__required {
+  margin-left: 4px;
+  color: #ff0000;
+  font-weight: 500;
 }
 
 .input,

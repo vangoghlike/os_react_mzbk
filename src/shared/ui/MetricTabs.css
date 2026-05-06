@@ -36,7 +36,16 @@
 }
 
 @media (max-width: 720px) {
+  .metric-tabs {
+    gap: 10px;
+  }
+
   .metric-tabs__item {
-    width: 100%;
+    flex: 1 1 calc((100% - 20px) / 3);
+    width: auto;
+    min-width: 0;
+    min-height: 62px;
+    padding: 0 8px;
+    white-space: nowrap;
   }
 }

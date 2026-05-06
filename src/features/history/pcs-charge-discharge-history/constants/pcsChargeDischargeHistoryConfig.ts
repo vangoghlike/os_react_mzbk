@@ -14,5 +14,7 @@ export const pcsChargeDischargeHistoryMetrics: readonly PcsChargeDischargeHistor
 export const pcsChargeDischargeHistoryDefaultCriteria = {
   mode: 'Month' as PcsChargeDischargeHistoryMode,
   startDate: '2026-05-01',
-  endDate: '2026-05-02'
+  endDate: '2026-05-31',
+  year: '2026',
+  month: '2026-05'
 };
