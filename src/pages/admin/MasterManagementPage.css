@@ -1,6 +1,6 @@
 .master-management-page__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  grid-template-columns: minmax(420px, 0.9fr) minmax(620px, 1.1fr);
   gap: 24px;
 }
 
@@ -11,7 +11,7 @@
 
 .master-management-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 620px;
   border-collapse: collapse;
   color: var(--text-main);
 }
@@ -73,7 +73,7 @@
 
 .master-detail-form__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 

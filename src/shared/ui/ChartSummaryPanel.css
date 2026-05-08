@@ -38,10 +38,6 @@
   min-width: 0;
 }
 
-.chart-summary-panel .chart-fixed-legend {
-  margin-top: 32px;
-}
-
 .chart-summary-panel__axis-title {
   position: absolute;
   top: 0;
