@@ -30,11 +30,17 @@
 
 .table {
   min-width: 820px;
+  overflow: hidden;
+  border: 1px solid var(--table-line);
+  border-radius: 18px;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--table-cell-bg);
   table-layout: auto;
 }
 
 .table thead th {
+  vertical-align: middle;
   min-height: 56px;
   padding: 15px 14px;
   border-right: 1px solid var(--table-line);
@@ -44,6 +50,7 @@
   font-size: 0.9375rem;
   font-weight: 300;
   white-space: nowrap;
+  text-align: center;
 }
 
 .table thead tr:first-child th {
@@ -86,6 +93,7 @@
 }
 
 .table tbody td {
+  vertical-align: middle;
   padding: 16px 14px;
   border-top: 1px solid var(--table-line);
   border-right: 1px solid var(--table-line);

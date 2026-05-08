@@ -3,17 +3,21 @@
   min-height: 0;
   flex-direction: column;
   gap: 96px;
-  padding: 29px 37px 60px 32px;
+  padding: 29px 37px 32px 32px;
 }
 
 .chart-summary-panel__top {
   display: grid;
   grid-template-columns: minmax(260px, 435px) minmax(620px, 1fr);
-  align-items: start;
+  align-items: center;
   gap: 46px;
 }
 
 .chart-summary-panel__donut {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
 }
 
@@ -26,12 +30,16 @@
 }
 
 .chart-summary-panel__matrix {
-  align-self: start;
+  align-self: center;
 }
 
 .chart-summary-panel__trend {
   position: relative;
   min-width: 0;
+}
+
+.chart-summary-panel .chart-fixed-legend {
+  margin-top: 32px;
 }
 
 .chart-summary-panel__axis-title {

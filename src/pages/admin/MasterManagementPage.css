@@ -21,7 +21,8 @@
   height: 48px;
   padding: 0 16px;
   border-bottom: 1px solid var(--table-line);
-  text-align: left;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
@@ -49,37 +50,78 @@
   color: var(--text-muted);
 }
 
-.master-detail-list {
+.master-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.master-detail-form__section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.master-detail-form__section-title {
+  margin: 0;
+  color: var(--text-white);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.master-detail-form__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-.master-detail-list__item {
-  min-height: 64px;
-  padding: 14px 16px;
-  border: 1px solid var(--line-soft);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+.master-detail-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.master-detail-list__item dt {
+.master-detail-field--wide {
+  grid-column: 1 / -1;
+}
+
+.master-detail-field__label {
   color: var(--text-muted);
-  font-size: 0.8125rem;
-  font-weight: 400;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
-.master-detail-list__item dd {
-  margin-top: 8px;
-  color: var(--text-main);
-  font-size: 0.9375rem;
+.master-detail-field__label span {
+  color: #ff0000;
+}
+
+.master-detail-field__input {
+  width: 100%;
+  height: 56px;
+  min-width: 0;
+  padding: 0 24px;
+  border: 1px solid rgba(220, 228, 245, 0.48);
+  border-radius: 999px;
+  background: #151827;
+  color: #ffffff;
+  font-size: 1rem;
   font-weight: 500;
-  word-break: break-word;
+  opacity: 1;
+  text-overflow: ellipsis;
+}
+
+.master-detail-field__input:disabled {
+  color: #ffffff;
+  opacity: 1;
+  -webkit-text-fill-color: #ffffff;
 }
 
 @media (max-width: 1180px) {
   .master-management-page__grid,
-  .master-detail-list {
+  .master-detail-form__grid {
     grid-template-columns: 1fr;
   }
 }

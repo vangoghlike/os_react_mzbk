@@ -36,6 +36,20 @@ type ConfirmAction = {
   run: () => Promise<void>;
 };
 
+type MasterDetailEntry = {
+  key: string;
+  label: string;
+  value: string;
+  required?: boolean;
+  section?: string;
+  wide?: boolean;
+};
+
+type MasterDetailSection = {
+  title: string;
+  entries: MasterDetailEntry[];
+};
+
 const masterResourceConfigs: Record<MasterResource, MasterResourceViewConfig> = {
   plants: {
     resource: 'plants',
@@ -177,14 +191,32 @@ function getDetailEntries(detail: ApiRecord | null, config: MasterResourceViewCo
 
   const usedKeys = new Set(config.detailFields.map((field) => field.key));
   const configuredEntries = config.detailFields.map((field) => ({
+    key: field.key,
     label: field.label,
-    value: getDisplayValue(detail, field.key)
+    value: getDisplayValue(detail, field.key),
+    required: field.required,
+    section: field.section,
+    wide: field.wide
   }));
   const extraEntries = Object.entries(detail)
     .filter(([key, value]) => !usedKeys.has(key) && getRawValue(value))
-    .map(([key, value]) => ({ label: key, value: getRawValue(value) }));
+    .map(([key, value]) => ({ key, label: key, value: getRawValue(value), section: '추가 정보' }));
 
   return [...configuredEntries, ...extraEntries];
+}
+
+function groupDetailEntries(entries: MasterDetailEntry[], fallbackTitle: string): MasterDetailSection[] {
+  return entries.reduce<MasterDetailSection[]>((sections, entry) => {
+    const title = entry.section ?? fallbackTitle;
+    const lastSection = sections[sections.length - 1];
+
+    if (lastSection?.title === title) {
+      lastSection.entries.push(entry);
+      return sections;
+    }
+
+    return [...sections, { title, entries: [entry] }];
+  }, []);
 }
 
 function createEmptyFormValues(fields: MasterField[]) {
@@ -329,6 +361,10 @@ export function MasterManagementPage() {
   }, [resource, selectedRow]);
 
   const detailEntries = useMemo(() => getDetailEntries(detail, config), [config, detail]);
+  const detailSections = useMemo(
+    () => groupDetailEntries(detailEntries, `${config.title} 정보`),
+    [config.title, detailEntries]
+  );
   const registerFields = useMemo(() => toEntityFormFields(config.detailFields), [config.detailFields]);
 
   const handleRegisterChange = (key: string, value: string) => {
@@ -526,15 +562,34 @@ export function MasterManagementPage() {
           {!isDetailLoading && detailEntries.length === 0 && (
             <div className="master-management-page__message">선택된 데이터가 없습니다.</div>
           )}
-          {!isDetailLoading && detailEntries.length > 0 && (
-            <dl className="master-detail-list">
-              {detailEntries.map((entry) => (
-                <div key={`${entry.label}-${entry.value}`} className="master-detail-list__item">
-                  <dt>{entry.label}</dt>
-                  <dd>{entry.value}</dd>
-                </div>
+          {!isDetailLoading && detailSections.length > 0 && (
+            <div className="master-detail-form">
+              {detailSections.map((section) => (
+                <section key={section.title} className="master-detail-form__section" aria-label={section.title}>
+                  <h4 className="master-detail-form__section-title">{section.title}</h4>
+                  <div className="master-detail-form__grid">
+                    {section.entries.map((entry) => (
+                      <label
+                        key={`${entry.key}-${entry.value}`}
+                        className={`master-detail-field ${entry.wide ? 'master-detail-field--wide' : ''}`.trim()}
+                      >
+                        <span className="master-detail-field__label">
+                          {entry.label}
+                          {entry.required && <span aria-hidden="true"> (*)</span>}
+                        </span>
+                        <input
+                          className="master-detail-field__input"
+                          value={entry.value}
+                          title={`${entry.label}: ${entry.value}`}
+                          readOnly
+                          disabled
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </section>
               ))}
-            </dl>
+            </div>
           )}
         </PageCard>
       </div>
