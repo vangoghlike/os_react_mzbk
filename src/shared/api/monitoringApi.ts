@@ -15,6 +15,9 @@ export type ApiPageResponse<T> = {
 };
 
 export type MonitoringSearchRequest = {
+  operYmd?: string;
+  operTime?: string;
+  searchDateType?: 'YEAR' | 'MONTH' | 'PERIOD';
   startDate?: string;
   endDate?: string;
   reportType?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
@@ -28,17 +31,24 @@ export type ReportSearchRequest = MonitoringSearchRequest & {
   operYmd?: string;
   baseYear?: string;
   baseMonth?: string;
+  baseWeek?: string;
 };
 
 export type MonitoringChartDto = {
+  baseLabel?: ApiScalar;
+  barValue?: ApiScalar;
+  barName?: ApiScalar;
   barValue1?: ApiScalar;
   barValue2?: ApiScalar;
   labelTime?: ApiScalar;
+  lineName1?: ApiScalar;
+  lineName2?: ApiScalar;
   lineValue1?: ApiScalar;
   lineValue2?: ApiScalar;
   lineValue3?: ApiScalar;
   operTime?: ApiScalar;
   operYmd?: ApiScalar;
+  outputUnit?: ApiScalar;
   targetId?: ApiScalar;
   targetName?: ApiScalar;
 };
@@ -55,15 +65,30 @@ export type MonitoringLatestDto = {
 };
 
 export type MonitoringTableDto = {
+  baseLabel?: ApiScalar;
+  chargeKwh?: ApiScalar;
+  current?: ApiScalar;
+  detailYn?: ApiScalar;
+  dischargeKwh?: ApiScalar;
+  frequency?: ApiScalar;
+  oilPress?: ApiScalar;
   operTime?: ApiScalar;
   operYmd?: ApiScalar;
+  pf?: ApiScalar;
+  powerKwh?: ApiScalar;
+  rpm?: ApiScalar;
   rowNo?: ApiScalar;
+  soc?: ApiScalar;
+  soh?: ApiScalar;
+  tankLevel?: ApiScalar;
   targetId?: ApiScalar;
   targetName?: ApiScalar;
+  temperature?: ApiScalar;
   value1?: ApiScalar;
   value2?: ApiScalar;
   value3?: ApiScalar;
   value4?: ApiScalar;
+  voltage?: ApiScalar;
 };
 
 export type MonitoringTargetDto = {
@@ -89,48 +114,28 @@ export type MonitoringDetailDto = {
 export type MonitoringResponseDto = {
   chartList?: MonitoringChartDto[];
   latest?: MonitoringLatestDto;
+  outputUnit?: ApiScalar;
+  pageTitle?: ApiScalar;
+  powerFlowType?: ApiScalar;
+  summary?: ApiRecord;
   tableList?: MonitoringTableDto[];
   targetList?: MonitoringTargetDto[];
 };
 
-type AnalysisChartResponse = {
-  baseLabel?: ApiScalar;
-  outputUnit?: ApiScalar;
-  lineValue1?: ApiScalar;
-  lineName1?: ApiScalar;
-  lineValue2?: ApiScalar;
-  lineName2?: ApiScalar;
-  barValue?: ApiScalar;
-  barName?: ApiScalar;
-};
-
-type AnalysisSummaryResponse = {
-  analysisType?: ApiScalar;
-  outputUnit?: ApiScalar;
-  startDate?: ApiScalar;
-  endDate?: ApiScalar;
-  dataCount?: ApiScalar;
-  totalPower?: ApiScalar;
-  avgEfficiency?: ApiScalar;
-  avgVoltage?: ApiScalar;
-  avgCurrent?: ApiScalar;
-  avgFrequency?: ApiScalar;
-  avgPf?: ApiScalar;
-  avgTemperature?: ApiScalar;
-  avgOilPress?: ApiScalar;
-  avgRpm?: ApiScalar;
-  avgTankLevel?: ApiScalar;
-  avgSoc?: ApiScalar;
-  avgSoh?: ApiScalar;
-  chartList?: AnalysisChartResponse[];
-};
-
 const MONITORING_DOMAIN_PATHS: Record<MonitoringDomain, string> = {
-  'base-total': '/monitoring/base/total',
-  'base-plant': '/monitoring/base/plant',
-  assist: '/monitoring/assist',
-  standby: '/monitoring/standby',
-  dispatch: '/monitoring/dispatch'
+  'base-total': '/monitoring/baseline',
+  'base-plant': '/monitoring/baseline',
+  assist: '/monitoring/peak-respond',
+  standby: '/monitoring/reserved',
+  dispatch: '/monitoring/power-supply'
+};
+
+const MONITORING_DETAIL_DOMAIN_PATHS: Record<MonitoringDomain, string> = {
+  'base-total': '/monitoring/baseline/detail',
+  'base-plant': '/monitoring/baseline/detail',
+  assist: '/monitoring/peak-respond/detail',
+  standby: '/monitoring/reserved/detail',
+  dispatch: '/monitoring/power-supply/detail'
 };
 
 const LEGACY_RESOURCE_DOMAIN: Record<MonitoringResource, MonitoringDomain> = {
@@ -143,14 +148,14 @@ const LEGACY_RESOURCE_DOMAIN: Record<MonitoringResource, MonitoringDomain> = {
   ac: 'dispatch'
 };
 
-const ANALYSIS_RESOURCE_PATHS: Record<MonitoringResource, string> = {
-  grid: '/analysis/base/total/history',
-  ess: '/analysis/assist/history',
-  pcs: '/analysis/standby/history',
-  battery: '/analysis/standby/history',
-  diesel1: '/analysis/assist/history',
-  diesel2: '/analysis/assist/history',
-  ac: '/analysis/dispatch/history'
+const TREND_RESOURCE_PATHS: Record<MonitoringResource, string> = {
+  grid: '/trend/baseline',
+  ess: '/trend/peak-respond',
+  pcs: '/trend/reserved',
+  battery: '/trend/reserved',
+  diesel1: '/trend/peak-respond',
+  diesel2: '/trend/peak-respond',
+  ac: '/trend/power-supply'
 };
 
 const RESOURCE_MATCHERS: Record<MonitoringResource, string[]> = {
@@ -177,18 +182,11 @@ function toQueryString(params?: Record<string, string | number | undefined>) {
   return queryString ? `?${queryString}` : '';
 }
 
-function toMonitoringDataResponse(row: ApiRecord | undefined): MonitoringResponseDto {
-  const latest = (row ?? {}) as MonitoringLatestDto;
+function getTrendSearchDateType(params?: MonitoringSearchRequest): 'YEAR' | 'MONTH' | 'PERIOD' {
+  if (params?.searchDateType) {
+    return params.searchDateType;
+  }
 
-  return {
-    latest,
-    chartList: row ? [row as MonitoringChartDto] : [],
-    tableList: row ? [row as MonitoringTableDto] : [],
-    targetList: []
-  };
-}
-
-function getAnalysisPeriodType(params?: MonitoringSearchRequest): 'YEAR' | 'MONTH' | 'PERIOD' {
   if (params?.periodType) {
     return params.periodType;
   }
@@ -199,12 +197,18 @@ function getAnalysisPeriodType(params?: MonitoringSearchRequest): 'YEAR' | 'MONT
   return 'PERIOD';
 }
 
-function toAnalysisQuery(params?: MonitoringSearchRequest) {
+function toMonitoringQuery(params?: MonitoringSearchRequest) {
   return {
-    periodType: getAnalysisPeriodType(params),
+    operYmd: params?.operYmd ?? params?.startDate,
+    operTime: params?.operTime
+  };
+}
+
+function toTrendQuery(params?: MonitoringSearchRequest) {
+  return {
+    searchDateType: getTrendSearchDateType(params),
     startDate: params?.startDate,
-    endDate: params?.endDate,
-    outputUnit: params?.outputUnit
+    endDate: params?.endDate
   };
 }
 
@@ -218,29 +222,54 @@ function normalizeBaseMonth(value?: string) {
   return month?.padStart(2, '0');
 }
 
+function getIsoWeek(dateText?: string) {
+  if (!dateText) {
+    return undefined;
+  }
+
+  const date = new Date(`${dateText}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = utcDate.getUTCDay() || 7;
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+
+  return String(week).padStart(2, '0');
+}
+
 function toReportQuery(period: ReportPeriodResource, params?: ReportSearchRequest) {
   if (!params) {
     return undefined;
   }
 
-  const { reportType: _reportType, ...query } = params;
-
   if (period === 'daily') {
     return {
-      ...query,
       operYmd: params.operYmd ?? params.startDate
+    };
+  }
+
+  if (period === 'weekly') {
+    return {
+      baseYear: params.baseYear ?? params.startDate?.slice(0, 4),
+      baseWeek: params.baseWeek ?? getIsoWeek(params.startDate)
     };
   }
 
   if (period === 'monthly') {
     return {
-      ...query,
       baseYear: params.baseYear ?? params.baseMonth?.slice(0, 4),
       baseMonth: normalizeBaseMonth(params.baseMonth)
     };
   }
 
-  return query;
+  return {
+    baseYear: params.baseYear ?? params.startDate?.slice(0, 4)
+  };
 }
 
 function getReportPeriod(resource: ReportResource, params?: ReportSearchRequest): ReportPeriodResource {
@@ -305,16 +334,40 @@ function readLatestValue(latest: MonitoringLatestDto | undefined, index: 1 | 2 |
 function createCommonRecord(row: MonitoringChartDto | MonitoringTableDto | MonitoringLatestDto, latest?: MonitoringLatestDto): ApiRecord {
   const chartRow = row as MonitoringChartDto;
   const tableRow = row as MonitoringTableDto;
-  const activeValue = firstValue(chartRow.barValue1, tableRow.value1, readLatestValue(latest, 1), readLatestValue(row as MonitoringLatestDto, 1));
-  const reactiveValue = firstValue(chartRow.lineValue1, tableRow.value2, readLatestValue(latest, 2), readLatestValue(row as MonitoringLatestDto, 2));
-  const apparentValue = firstValue(chartRow.barValue2, tableRow.value3, readLatestValue(latest, 3), readLatestValue(row as MonitoringLatestDto, 3));
-  const pfValue = firstValue(chartRow.lineValue2, chartRow.lineValue1, latest?.ratio1, (row as MonitoringLatestDto).ratio1);
-  const ratioValue = firstValue(chartRow.lineValue3, latest?.ratio2, (row as MonitoringLatestDto).ratio2, 100);
+  const activeValue = firstValue(
+    chartRow.barValue1,
+    chartRow.barValue,
+    tableRow.value1,
+    tableRow.powerKwh,
+    tableRow.chargeKwh,
+    readLatestValue(latest, 1),
+    readLatestValue(row as MonitoringLatestDto, 1)
+  );
+  const reactiveValue = firstValue(
+    chartRow.lineValue1,
+    tableRow.value2,
+    tableRow.dischargeKwh,
+    tableRow.current,
+    readLatestValue(latest, 2),
+    readLatestValue(row as MonitoringLatestDto, 2)
+  );
+  const apparentValue = firstValue(
+    chartRow.barValue2,
+    chartRow.lineValue2,
+    tableRow.value3,
+    tableRow.voltage,
+    readLatestValue(latest, 3),
+    readLatestValue(row as MonitoringLatestDto, 3)
+  );
+  const pfValue = firstValue(chartRow.lineValue2, tableRow.pf, chartRow.lineValue1, latest?.ratio1, (row as MonitoringLatestDto).ratio1);
+  const ratioValue = firstValue(chartRow.lineValue3, tableRow.soc, tableRow.soh, tableRow.temperature, latest?.ratio2, (row as MonitoringLatestDto).ratio2, 100);
+  const baseLabel = firstValue(chartRow.baseLabel, tableRow.baseLabel);
 
   return {
-    esmtOperYmd: firstValue(chartRow.operYmd, tableRow.operYmd, (row as MonitoringLatestDto).operYmd, latest?.operYmd),
-    esmtOperTime: firstValue(chartRow.labelTime, chartRow.operTime, tableRow.operTime, (row as MonitoringLatestDto).operTime, latest?.operTime),
-    baseDate: firstValue(chartRow.operYmd, tableRow.operYmd, (row as MonitoringLatestDto).operYmd, latest?.operYmd),
+    esmtOperYmd: firstValue(chartRow.operYmd, tableRow.operYmd, baseLabel, (row as MonitoringLatestDto).operYmd, latest?.operYmd),
+    esmtOperTime: firstValue(chartRow.labelTime, chartRow.operTime, tableRow.operTime, baseLabel, (row as MonitoringLatestDto).operTime, latest?.operTime),
+    baseDate: firstValue(chartRow.operYmd, tableRow.operYmd, baseLabel, (row as MonitoringLatestDto).operYmd, latest?.operYmd),
+    label: baseLabel,
     rowNo: tableRow.rowNo,
     targetId: firstValue(chartRow.targetId, tableRow.targetId),
     targetName: firstValue(chartRow.targetName, tableRow.targetName),
@@ -323,6 +376,17 @@ function createCommonRecord(row: MonitoringChartDto | MonitoringTableDto | Monit
     apparentValue,
     pfValue,
     ratioValue,
+    maxBasePower: activeValue,
+    minBasePower: activeValue,
+    avgBasePower: activeValue,
+    maxAssistPower: reactiveValue,
+    avgAssistPower: reactiveValue,
+    maxStandbyPower: apparentValue,
+    avgStandbyPower: apparentValue,
+    maxDispatchPower: firstValue(apparentValue, reactiveValue),
+    minDispatchPower: firstValue(apparentValue, reactiveValue),
+    avgDispatchPower: firstValue(apparentValue, reactiveValue),
+    avgSoc: firstValue(chartRow.lineValue2, tableRow.soc, ratioValue),
     remark: firstValue((row as MonitoringLatestDto).remark, latest?.remark)
   };
 }
@@ -516,57 +580,66 @@ function toLegacyRecord(row: MonitoringChartDto | MonitoringTableDto | Monitorin
   };
 
   if (resource === 'grid') {
-    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.baAtpTot, original.totalBasePower, original.baseAtpTot);
-    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.baRtpTot);
-    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.baArpTot);
-    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.baPfTot);
+    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.powerKwh, original.barValue, original.baAtpTot, original.totalBasePower, original.baseAtpTot);
+    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.current, original.lineValue1, original.baRtpTot);
+    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.voltage, original.lineValue2, original.baArpTot);
+    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.pf, original.baPfTot);
     resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.lgldGbcd);
     return { ...withBaseFields(resourceRecord), ...original };
   }
 
   if (resource === 'ess') {
-    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.essAtpTot, original.totalAssistPower, original.assistAtpTot);
-    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.essRtpTot);
-    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.essArpTot);
-    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.essPfTot);
-    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.essPlntSoc, original.besSocRatio, original.avgSoc);
+    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.powerKwh, original.barValue, original.essAtpTot, original.totalAssistPower, original.assistAtpTot);
+    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.current, original.lineValue1, original.essRtpTot);
+    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.voltage, original.lineValue2, original.essArpTot);
+    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.pf, original.essPfTot);
+    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.soc, original.essPlntSoc, original.besSocRatio, original.avgSoc);
     return { ...withEssFields(resourceRecord), ...original };
   }
 
   if (resource === 'pcs') {
-    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.pcsAtpTot, original.totalDispatchPower, original.dispatchAtpTot);
-    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.pcsRtpTot, original.pcsDcP);
-    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.pcsArpTot, original.pcsDcA);
-    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.pcsPfTot, original.pcsFr);
-    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.pcsDcV);
+    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.chargeKwh, original.powerKwh, original.barValue, original.pcsAtpTot, original.totalDispatchPower, original.dispatchAtpTot);
+    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.dischargeKwh, original.lineValue1, original.pcsRtpTot, original.pcsDcP);
+    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.voltage, original.lineValue2, original.pcsArpTot, original.pcsDcA);
+    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.frequency, original.pf, original.pcsPfTot, original.pcsFr);
+    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.current, original.pcsDcV);
     return { ...withPcsFields(resourceRecord), ...original };
   }
 
   if (resource === 'battery') {
-    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.batterySoc, original.avgSoc, original.besSocRatio);
-    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.avgSoh);
-    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.pcsDcV);
-    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.avgTemperature);
+    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.soc, original.batterySoc, original.avgSoc, original.besSocRatio);
+    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.soh, original.avgSoh);
+    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.voltage, original.pcsDcV);
+    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.temperature, original.avgTemperature);
     return { ...withBatteryFields(resourceRecord), ...original };
   }
 
   if (resource === 'diesel1' || resource === 'diesel2') {
-    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.dslAtpTot, original.totalStandbyPower, original.standbyAtpTot);
-    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.dslRtpTot);
-    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.dslArpTot);
-    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.dslPfTot);
-    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.dslFuelLvl, original.avgTankLevel);
+    resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.powerKwh, original.barValue, original.dslAtpTot, original.totalStandbyPower, original.standbyAtpTot);
+    resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.current, original.lineValue1, original.dslRtpTot);
+    resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.voltage, original.lineValue2, original.dslArpTot);
+    resourceRecord.pfValue = firstValue(resourceRecord.pfValue, original.pf, original.dslPfTot);
+    resourceRecord.ratioValue = firstValue(resourceRecord.ratioValue, original.tankLevel, original.dslFuelLvl, original.avgTankLevel);
     return { ...withDieselFields(resourceRecord), ...original };
   }
 
-  resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.acSuplyAirtmp, original.pcsDcP);
-  resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.acRtnAirtmp, original.pcsDcA);
-  resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.acRtnAirhum, original.pcsDcV);
+  resourceRecord.activeValue = firstValue(resourceRecord.activeValue, original.temperature, original.acSuplyAirtmp, original.pcsDcP);
+  resourceRecord.reactiveValue = firstValue(resourceRecord.reactiveValue, original.current, original.acRtnAirtmp, original.pcsDcA);
+  resourceRecord.apparentValue = firstValue(resourceRecord.apparentValue, original.voltage, original.acRtnAirhum, original.pcsDcV);
   return { ...withAcFields(resourceRecord), ...original };
 }
 
 function getMonitoringRows(response: MonitoringResponseDto | undefined, resource: MonitoringResource) {
-  const sourceRows = [...(response?.chartList ?? []), ...(response?.tableList ?? [])];
+  const chartRows = response?.chartList ?? [];
+  const tableRows = response?.tableList ?? [];
+  const rowCount = Math.max(chartRows.length, tableRows.length);
+  const sourceRows =
+    rowCount > 0
+      ? Array.from({ length: rowCount }, (_, index) => ({
+          ...(tableRows[index] ?? {}),
+          ...(chartRows[index] ?? {})
+        }))
+      : [];
   const matchedRows = sourceRows.filter((row) => matchesResource(row, resource));
   const rows = matchedRows.length > 0 ? matchedRows : sourceRows;
 
@@ -591,140 +664,30 @@ export function toLegacyMonitoringLatest(response: MonitoringResponseDto | undef
   return getMonitoringLatest(response, resource);
 }
 
-function toAnalysisHistoryRow(row: AnalysisChartResponse, summary: AnalysisSummaryResponse, resource: MonitoringResource): ApiRecord {
-  const baseLabel = firstValue(row.baseLabel, summary.startDate);
-  const record: ApiRecord = {
-    label: baseLabel,
-    baseDate: baseLabel,
-    esmtOperYmd: baseLabel,
-    esmtOperTime: baseLabel,
-    totalPower: summary.totalPower,
-    avgEfficiency: summary.avgEfficiency,
-    avgVoltage: summary.avgVoltage,
-    avgCurrent: summary.avgCurrent,
-    avgFrequency: summary.avgFrequency,
-    avgPf: summary.avgPf,
-    avgTemperature: summary.avgTemperature,
-    avgOilPress: summary.avgOilPress,
-    avgRpm: summary.avgRpm,
-    avgTankLevel: summary.avgTankLevel,
-    avgSoc: summary.avgSoc,
-    avgSoh: summary.avgSoh,
-    activeValue: row.barValue,
-    reactiveValue: firstValue(row.lineValue1, row.lineValue2),
-    apparentValue: row.barValue,
-    pfValue: summary.avgPf,
-    ratioValue: firstValue(summary.avgSoc, summary.avgEfficiency),
-    barName: row.barName,
-    lineName1: row.lineName1,
-    lineName2: row.lineName2
-  };
-
-  if (resource === 'grid') {
-    return {
-      ...withBaseFields(record),
-      baAtpTot: row.barValue,
-      baRtpTot: firstValue(row.lineValue1, row.lineValue2),
-      baArpTot: summary.totalPower,
-      baPfTot: summary.avgPf,
-      baPtpvL12: summary.avgVoltage,
-      baPaL1: summary.avgCurrent,
-      baPfrL1: summary.avgFrequency
-    };
-  }
-
-  if (resource === 'ess') {
-    return {
-      ...withEssFields(record),
-      essAtpTot: row.barValue,
-      essRtpTot: firstValue(row.lineValue1, row.lineValue2),
-      essArpTot: summary.totalPower,
-      essPfTot: summary.avgPf,
-      essPlntSoc: summary.avgSoc,
-      besDhgCapa: row.lineValue1,
-      besChgCapa: row.lineValue2
-    };
-  }
-
-  if (resource === 'pcs') {
-    return {
-      ...withPcsFields(record),
-      pcsAtpTot: row.barValue,
-      pcsRtpTot: firstValue(row.lineValue1, row.lineValue2),
-      pcsArpTot: summary.totalPower,
-      pcsPfTot: summary.avgPf,
-      pcsDcP: row.barValue,
-      pcsDcV: summary.avgVoltage,
-      pcsDcA: summary.avgCurrent,
-      pcsFr: summary.avgFrequency
-    };
-  }
-
-  if (resource === 'battery') {
-    return {
-      ...withBatteryFields(record),
-      batAvgSoc: firstValue(row.barValue, summary.avgSoc),
-      batAvgSoh: firstValue(row.lineValue1, summary.avgSoh),
-      batAvgDcv: summary.avgVoltage,
-      batAvgDca: summary.avgCurrent,
-      batAvgPaktmp: summary.avgTemperature
-    };
-  }
-
-  if (resource === 'diesel1' || resource === 'diesel2') {
-    return {
-      ...withDieselFields(record),
-      dslAtpTot: row.barValue,
-      dslRtpTot: firstValue(row.lineValue1, row.lineValue2),
-      dslArpTot: summary.totalPower,
-      dslPfTot: summary.avgPf,
-      dslEgnRpm: summary.avgRpm,
-      dslClntTmp: summary.avgTemperature,
-      dslOilPrsr: summary.avgOilPress,
-      dslFuelLvl: summary.avgTankLevel
-    };
-  }
-
-  return {
-    ...withAcFields(record),
-    acSuplyAirtmp: row.barValue,
-    acRtnAirtmp: row.lineValue1,
-    acRtnAirhum: row.lineValue2
-  };
-}
-
-function toAnalysisHistoryRows(summary: AnalysisSummaryResponse | undefined, resource: MonitoringResource) {
-  if (!summary) {
-    return [];
-  }
-
-  const chartRows = summary.chartList?.length ? summary.chartList : [{ baseLabel: summary.startDate, barValue: summary.totalPower }];
-
-  return chartRows.map((row) => toAnalysisHistoryRow(row, summary, resource));
-}
-
 export const monitoringApi = {
-  async getData<T = MonitoringResponseDto>(domain: MonitoringDomain) {
-    const response = await apiClient<ApiRecord>(getMonitoringDomainPath(domain), { operationName: '모니터링 현재값 조회' });
-
-    return toMonitoringDataResponse(response) as T;
+  getData<T = MonitoringResponseDto>(domain: MonitoringDomain, params?: MonitoringSearchRequest) {
+    return apiClient<T>(`${getMonitoringDomainPath(domain)}${toQueryString(toMonitoringQuery(params))}`, { operationName: '모니터링 현재값 조회' });
   },
-  getDetail<T = MonitoringDetailDto[]>(domain: MonitoringDomain, targetId?: string) {
-    void domain;
-    void targetId;
+  async getDetail<T = MonitoringDetailDto[]>(domain: MonitoringDomain, targetIdOrParams?: string | MonitoringSearchRequest) {
+    const params = typeof targetIdOrParams === 'string' ? undefined : targetIdOrParams;
+    const response = await apiClient<MonitoringResponseDto>(`${MONITORING_DETAIL_DOMAIN_PATHS[domain]}${toQueryString(toMonitoringQuery(params))}`, {
+      operationName: '모니터링 상세 조회'
+    });
 
-    return Promise.resolve([] as T);
+    return toLegacyMonitoringRows(response, 'grid') as T;
   },
   getExcel(domain: MonitoringDomain) {
     return apiClient<Blob>(`/excel/${domain}`, { operationName: '엑셀 다운로드' });
   },
-  getDashboardStatus<T extends ApiRecord>(mode: 'total' | 'plant' = 'total') {
-    return apiClient<T>(`/monitoring/dashboard/${mode}`, { operationName: '대시보드 조회' });
+  getDashboardStatus<T extends ApiRecord>(mode: 'total' | 'plant' = 'total', params?: MonitoringSearchRequest) {
+    const path = mode === 'plant' ? '/dashboard/individual' : '/dashboard/integrated';
+
+    return apiClient<T>(`${path}${toQueryString(toMonitoringQuery(params))}`, { operationName: '대시보드 조회' });
   },
   async getDashboard<T extends ApiRecord>() {
     const response = await this.getDashboardStatus<ApiRecord>('total');
 
-    return toLegacyMonitoringLatest(toMonitoringDataResponse(response), 'grid') as T;
+    return toLegacyMonitoringLatest({ latest: response as MonitoringLatestDto }, 'grid') as T;
   },
   async getLatest<T extends ApiRecord>(resource: MonitoringResource) {
     const response = await this.getData<MonitoringResponseDto>(LEGACY_RESOURCE_DOMAIN[resource]);
@@ -732,22 +695,21 @@ export const monitoringApi = {
     return toLegacyMonitoringLatest(response, resource) as T;
   },
   async getStatus<T extends ApiRecord>(resource: MonitoringResource, params?: MonitoringSearchRequest) {
-    void params;
-
-    const response = await this.getData<MonitoringResponseDto>(LEGACY_RESOURCE_DOMAIN[resource]);
+    const response = await this.getData<MonitoringResponseDto>(LEGACY_RESOURCE_DOMAIN[resource], params);
 
     return toLegacyMonitoringRows(response, resource) as T[];
   },
   async getHistory<T extends ApiRecord>(resource: MonitoringResource, params?: MonitoringSearchRequest) {
-    const response = await apiClient<AnalysisSummaryResponse>(`${ANALYSIS_RESOURCE_PATHS[resource]}${toQueryString(toAnalysisQuery(params))}`, {
+    const response = await apiClient<MonitoringResponseDto>(`${TREND_RESOURCE_PATHS[resource]}${toQueryString(toTrendQuery(params))}`, {
       operationName: '이력 조회'
     });
 
-    return toAnalysisHistoryRows(response, resource) as T[];
+    return toLegacyMonitoringRows(response, resource) as T[];
   },
-  getReport<T extends ApiRecord>(resource: ReportResource, params?: ReportSearchRequest) {
+  async getReport<T extends ApiRecord>(resource: ReportResource, params?: ReportSearchRequest) {
     const period = getReportPeriod(resource, params);
+    const response = await apiClient<MonitoringResponseDto>(`/report/${period}${toQueryString(toReportQuery(period, params))}`, { operationName: '보고서 조회' });
 
-    return apiClient<T[]>(`/report/${period}${toQueryString(toReportQuery(period, params))}`, { operationName: '보고서 조회' });
+    return toLegacyMonitoringRows(response, 'grid') as T[];
   }
 };
