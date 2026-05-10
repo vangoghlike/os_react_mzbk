@@ -2,7 +2,7 @@
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 96px;
+  gap: 60px;
   padding: 29px 37px 32px 32px;
 }
 
@@ -24,8 +24,8 @@
 .chart-summary-panel__donut h3 {
   margin: 0 0 8px;
   color: #ffffff;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 700;
   letter-spacing: -0.03em;
 }
 

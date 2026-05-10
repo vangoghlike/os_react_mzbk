@@ -1,14 +1,16 @@
 .support-generation-history-result .card__body {
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  min-height: 700px;
+  gap: 37px;
+  min-height: 650px;
+  padding: 37px;
 }
 
 @media (max-width: 720px) {
   .support-generation-history-result .card__body {
     gap: 18px;
     min-height: auto;
+    padding: 18px 14px 22px;
   }
 
   .support-generation-history-result .chart {

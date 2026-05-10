@@ -82,8 +82,8 @@
   align-items: center;
   justify-content: center;
   gap: 18px;
-  margin-top: 32px;
-  margin-bottom: 32px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   color: #d6ddea;
   font-size: 13px;
   font-weight: 300;
@@ -91,8 +91,8 @@
 
 @media (max-width: 920px) {
   .chart-fixed-legend {
-    margin-top: 24px;
-    margin-bottom: 24px;
+    margin-top: 10px;
+    margin-bottom: 10px;
   }
 }
 

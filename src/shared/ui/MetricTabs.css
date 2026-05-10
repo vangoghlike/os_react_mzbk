@@ -7,8 +7,8 @@
 }
 
 .metric-tabs__item {
-  width: min(100%, 233px);
-  min-height: 62px;
+  width: min(100%, 171px);
+  min-height: 50px;
   border-radius: 5px;
   border: 1px solid var(--control-border);
   background: var(--control-bg);
@@ -44,7 +44,7 @@
     flex: 1 1 calc((100% - 20px) / 3);
     width: auto;
     min-width: 0;
-    min-height: 62px;
+    min-height: 50px;
     padding: 0 8px;
     white-space: nowrap;
   }

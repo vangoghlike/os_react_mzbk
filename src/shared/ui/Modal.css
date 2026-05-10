@@ -11,7 +11,7 @@
 }
 
 .modal {
-  width: min(100%, 560px);
+  width: min(100%, 570px);
   max-height: calc(100dvh - 48px);
   padding: 30px;
   border-radius: 28px;
@@ -70,6 +70,7 @@
 .modal__title {
   margin-top: 16px;
   font-size: 1.5rem;
+  overflow-wrap: anywhere;
 }
 
 .modal__description {
@@ -78,6 +79,7 @@
   font-size: 0.9375rem;
   line-height: 1.6;
   white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .modal__content {
@@ -86,6 +88,7 @@
   overflow: auto;
   padding-right: 6px;
   font-size: 0.9375rem;
+  overflow-wrap: anywhere;
   scrollbar-color: rgba(150, 160, 182, 0.64) rgba(255, 255, 255, 0.06);
   scrollbar-width: thin;
 }

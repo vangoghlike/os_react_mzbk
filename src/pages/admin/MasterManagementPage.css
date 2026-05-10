@@ -4,6 +4,14 @@
   gap: 24px;
 }
 
+.master-management-page .page-heading__actions .button,
+.master-management-page .master-management-page__detail-card .card__actions .button {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+}
+
 .master-management-table-wrap {
   width: 100%;
   overflow-x: auto;

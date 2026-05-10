@@ -90,7 +90,7 @@
 
 .search-condition-bar__date input {
   width: 240px;
-  height: 56px;
+  height: 46px;
   border-radius: 5px;
   border: 1px solid rgba(255, 255, 255, 0.42);
   background-color: #111219;
@@ -184,7 +184,7 @@
 
 .search-condition-bar__button {
   min-width: 170px;
-  height: 56px;
+  height: 46px;
   border-radius: 5px;
   font-size: 1rem;
   flex: 0 0 auto;
