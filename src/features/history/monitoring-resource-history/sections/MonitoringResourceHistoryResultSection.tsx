@@ -6,7 +6,7 @@ import type { SearchConditionCriteria } from '../../../../shared/ui/SearchCondit
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
-import { getHourlyChartMaxWidth, getHourlyChartMinWidth } from '../../../../shared/utils/hourlyChartSlots';
+import { isSingleDayRange, isTodayDate } from '../../../../shared/utils/hourlyChartSlots';
 import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
 import type {
   MonitoringHistoryMetric,
@@ -32,7 +32,8 @@ export function MonitoringResourceHistoryResultSection({
   searchedAt
 }: MonitoringResourceHistoryResultSectionProps) {
   const [metric, setMetric] = useState<MonitoringHistoryMetric>(config.metrics[0] ?? 'Max kWh');
-  const isHourlyChart = searchCriteria.mode !== 'Year' && searchCriteria.mode !== 'Month';
+  const isHourlyChart = isSingleDayRange(searchCriteria.startDate, searchCriteria.endDate);
+  const shouldScrollToCurrentTime = isHourlyChart && isTodayDate(searchCriteria.startDate);
   const historyConfig = useMemo(
     () => ({
       resource: config.resource,
@@ -101,10 +102,10 @@ export function MonitoringResourceHistoryResultSection({
           <BaseChart
             option={chartOption}
             height={420}
-            minWidth={isHourlyChart ? getHourlyChartMinWidth(data.labels.length) : 1120}
-            maxWidth={isHourlyChart ? getHourlyChartMaxWidth(data.labels.length) : undefined}
-            scrollable
-            scrollToCurrentTime={isHourlyChart && data.labels.length <= 24}
+            minWidth={1120}
+            fullDay={isHourlyChart}
+            scrollToCurrentTime={shouldScrollToCurrentTime}
+            categoryCount={!isHourlyChart ? data.labels.length : undefined}
             yAxisLabel="Total kWh"
             legendItems={[
               { name: config.chartBarName, type: 'bar', color: '#2f9cff' },

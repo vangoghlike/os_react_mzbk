@@ -25,7 +25,8 @@
 .summary-matrix {
   display: flex;
   flex-direction: column;
-  gap: 29px;
+  border: 1px solid var(--table-line);
+  border-radius: 18px;
   --summary-label-width: 170px;
   --summary-value-width: 110px;
 }
@@ -97,7 +98,9 @@
 }
 
 .summary-matrix__row:last-child {
+  border-radius: 18px;
   border-bottom: 0;
+  overflow: hidden;
 }
 
 .summary-matrix__label,
@@ -110,7 +113,7 @@
 }
 
 .summary-matrix__label {
-  justify-content: flex-start;
+  justify-content: center;
   padding-left: 0;
   color: #f4f6fb;
 }
@@ -128,7 +131,6 @@
   }
 
   .summary-matrix {
-    gap: 22px;
     --summary-label-width: 136px;
     --summary-value-width: 96px;
   }

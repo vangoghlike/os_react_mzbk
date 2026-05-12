@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
+import { useAutoRefresh } from '../../../../shared/hooks/useAutoRefresh';
 import { toPlantOperationStatusData } from '../adapters/plantOperationStatusAdapter';
 import { plantOperationStatusApi, type PlantOperationViewMode } from '../api/plantOperationStatusApi';
 import type { PlantOperationStatusData } from '../types/plantOperationStatus';
@@ -17,6 +18,7 @@ type PlantOperationStatusState = {
  * 수정: 자동 갱신이나 조회 주기가 필요하면 이 hook에만 주기를 추가한다.
  */
 export function usePlantOperationStatus(viewMode: PlantOperationViewMode, targetId = '') {
+  const refreshedAt = useAutoRefresh();
   const [state, setState] = useState<PlantOperationStatusState>({
     data: null,
     isLoading: true,
@@ -27,7 +29,7 @@ export function usePlantOperationStatus(viewMode: PlantOperationViewMode, target
     let mounted = true;
 
     async function loadStatus() {
-      setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
+      setState((currentState) => ({ ...currentState, isLoading: currentState.data === null, errorMessage: '' }));
 
       try {
         const response = await plantOperationStatusApi.getLatestStatus(viewMode, targetId);
@@ -53,7 +55,7 @@ export function usePlantOperationStatus(viewMode: PlantOperationViewMode, target
     return () => {
       mounted = false;
     };
-  }, [targetId, viewMode]);
+  }, [refreshedAt, targetId, viewMode]);
 
   return state;
 }

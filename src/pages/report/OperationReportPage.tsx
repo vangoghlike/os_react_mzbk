@@ -15,6 +15,7 @@ import { SearchConditionBar, type SearchConditionCriteria } from '../../shared/u
 import { PageCard } from '../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../shared/ui/PageDataLoadingFallback';
 import { PageHeading } from '../../shared/ui/PageHeading';
+import { isTodayDate } from '../../shared/utils/hourlyChartSlots';
 import './OperationReportPage.css';
 
 const reportTabs = ['Daily', 'Weekly', 'Monthly', 'Yearly'] as const;
@@ -25,6 +26,17 @@ type ReportField = {
   label: string;
   key: string;
 };
+
+type ReportTooltipParam = {
+  axisValueLabel?: string;
+  marker?: unknown;
+  seriesName?: string;
+  value?: number | string | null | Array<number | string | null>;
+  data?: number | null | { value?: number | null; reportValue?: number | null };
+};
+
+type ReportChartRow = ApiRecord | null;
+type ReportChartValue = number | null;
 
 type ReportConfig = {
   title: string;
@@ -63,6 +75,38 @@ const reportPrintTitles: Record<ReportTab, string> = {
   Yearly: 'Yearly Operation Report'
 };
 
+const reportChartColors = ['#2f9cff', '#f7c978', '#f3f6ff'];
+const reportDailyHourLabels = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
+
+function formatReportDateValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function addReportDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
+function getDateKeysInRange(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    return [];
+  }
+
+  const keys: string[] = [];
+  let cursor = start;
+
+  while (cursor <= end) {
+    keys.push(formatReportDateValue(cursor));
+    cursor = addReportDays(cursor, 1);
+  }
+
+  return keys;
+}
+
 const operationReportFields: ReportField[] = [
   { label: 'DATE', key: 'baseDate' },
   { label: 'BASE MAX', key: 'maxBasePower' },
@@ -85,6 +129,55 @@ function getReportField(key: string) {
   }
 
   return field;
+}
+
+function getReportChartAxisScale(...seriesList: ReportChartValue[][]) {
+  const values = seriesList.flat().filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  const maxValue = Math.max(0, ...values);
+
+  if (maxValue <= 0) {
+    return { max: 100, interval: 20 };
+  }
+
+  const roughInterval = maxValue / 5;
+  const magnitude = 10 ** Math.floor(Math.log10(roughInterval));
+  const intervalMultiplier = [1, 2, 2.5, 5, 10].find((multiplier) => multiplier * magnitude >= roughInterval) ?? 10;
+  const interval = intervalMultiplier * magnitude;
+  const axisMax = Math.max(100, interval * Math.ceil(maxValue / interval));
+
+  return { max: axisMax, interval };
+}
+
+function getReportRatioVisualValue(value: number | null, axisMax: number) {
+  if (value === null) {
+    return null;
+  }
+
+  return Number(((Math.max(0, Math.min(100, value)) / 100) * axisMax).toFixed(2));
+}
+
+function getTooltipValue(param: ReportTooltipParam) {
+  if (typeof param.data === 'object' && param.data && typeof param.data.reportValue === 'number') {
+    return param.data.reportValue;
+  }
+
+  if (Array.isArray(param.value)) {
+    return param.value.at(-1);
+  }
+
+  return param.value;
+}
+
+function formatReportChartTooltip(params: unknown) {
+  const paramList = (Array.isArray(params) ? params : [params]) as ReportTooltipParam[];
+  const title = paramList[0]?.axisValueLabel ?? '';
+  const rows = paramList.filter((param) => getTooltipValue(param) !== null && getTooltipValue(param) !== undefined).map((param) => {
+    const value = getTooltipValue(param);
+
+    return `${String(param.marker ?? '')} ${param.seriesName ?? ''}<span style="float:right;margin-left:20px;font-weight:700">${formatApiNumber(value)}</span>`;
+  });
+
+  return [title, ...rows].join('<br/>');
 }
 
 const reportConfigs: Record<ReportPeriodResource, ReportConfig> = {
@@ -256,18 +349,141 @@ function createDefaultReportCriteria(mode: ReportTab): SearchConditionCriteria<R
   };
 }
 
+function getMonthKeysInDateRange(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return [];
+  }
+
+  const keys: string[] = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+
+  while (cursor <= endMonth) {
+    keys.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`);
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return keys;
+}
+
+function getReportRowDateKey(row: ApiRecord) {
+  const label = getReportDateLabel(row);
+  const match = label.match(/\d{4}-\d{2}-\d{2}/);
+
+  return match?.[0] ?? null;
+}
+
+function isDateWithinRange(dateText: string | null, startDate: string, endDate: string) {
+  return Boolean(dateText && dateText >= startDate && dateText <= endDate);
+}
+
+async function getWeeklyDurationReportRows(criteria: SearchConditionCriteria<ReportTab>) {
+  const monthKeys = getMonthKeysInDateRange(criteria.startDate, criteria.endDate);
+  const monthlyRows = await Promise.all(
+    monthKeys.map((monthKey) =>
+      monitoringApi.getReport<ApiRecord>('monthly', {
+        reportType: 'MONTHLY',
+        baseYear: monthKey.slice(0, 4),
+        baseMonth: monthKey
+      })
+    )
+  );
+
+  return monthlyRows.flat().filter((row) => isDateWithinRange(getReportRowDateKey(row), criteria.startDate, criteria.endDate));
+}
+
 function getReportDateLabel(row: ApiRecord) {
   return getRawValue(row.baseDate) || getRawValue(row.operYmd) || '-';
 }
 
-function sortReportRows(rows: ApiRecord[]) {
-  return [...rows].sort((a, b) => getReportDateLabel(a).localeCompare(getReportDateLabel(b)));
+function getReportTimeLabel(row: ApiRecord) {
+  const baseLabel = getRawValue(row.baseLabel) || getRawValue(row.label);
+
+  if (baseLabel) {
+    return baseLabel;
+  }
+
+  const time = getRawValue(row.esmtOperTime) || getRawValue(row.operTime);
+
+  if (time.length >= 5) {
+    return time.slice(0, 5);
+  }
+
+  return time || '-';
 }
 
-function buildDetailTableRows(rows: ApiRecord[]): TableRow[] {
+function getReportHourSlot(row: ApiRecord) {
+  const label = getReportTimeLabel(row);
+  const match = label.match(/^(\d{1,2})/);
+
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+    return null;
+  }
+
+  return String(hour).padStart(2, '0');
+}
+
+function buildReportChartRows(rows: ApiRecord[], criteria: SearchConditionCriteria<ReportTab>): ReportChartRow[] {
+  if (criteria.mode !== 'Daily' && criteria.mode !== 'Weekly') {
+    return rows;
+  }
+
+  if (criteria.mode === 'Weekly') {
+    const rowByDate = new Map<string, ApiRecord>();
+
+    rows.forEach((row) => {
+      const dateKey = getReportRowDateKey(row);
+
+      if (dateKey) {
+        rowByDate.set(dateKey, row);
+      }
+    });
+
+    return getDateKeysInRange(criteria.startDate, criteria.endDate).map((dateKey) => rowByDate.get(dateKey) ?? null);
+  }
+
+  const rowByHour = new Map<string, ApiRecord>();
+
+  rows.forEach((row) => {
+    const hour = getReportHourSlot(row);
+
+    if (hour) {
+      rowByHour.set(hour, row);
+    }
+  });
+
+  return reportDailyHourLabels.map((hour) => rowByHour.get(hour) ?? null);
+}
+
+function getReportChartValue(row: ReportChartRow, key: string): ReportChartValue {
+  if (!row) {
+    return null;
+  }
+
+  return toChartNumber(readApiField(row, key));
+}
+
+function getReportDisplayLabel(row: ApiRecord, mode: ReportTab) {
+  return mode === 'Daily' ? getReportTimeLabel(row) : getReportDateLabel(row);
+}
+
+function sortReportRows(rows: ApiRecord[], mode: ReportTab) {
+  return [...rows].sort((a, b) => getReportDisplayLabel(a, mode).localeCompare(getReportDisplayLabel(b, mode)));
+}
+
+function buildDetailTableRows(rows: ApiRecord[], mode: ReportTab): TableRow[] {
   return rows.map((row) =>
     [
-      getReportDateLabel(row),
+      getReportDisplayLabel(row, mode),
       formatApiNumber(readApiField(row, 'avgBasePower')),
       formatApiNumber(readApiField(row, 'avgDispatchPower')),
       formatApiNumber(readApiField(row, 'avgSoc')),
@@ -402,19 +618,22 @@ export function OperationReportPage() {
       setErrorMessage('');
 
       try {
-        const nextRows = await monitoringApi.getReport<ApiRecord>(config.resource, {
-          startDate: searchCriteria.startDate,
-          endDate: searchCriteria.endDate,
-          reportType: getReportType(config.resource),
-          baseYear: searchCriteria.year,
-          baseMonth: searchCriteria.month
-        });
+        const nextRows =
+          config.resource === 'weekly'
+            ? await getWeeklyDurationReportRows(searchCriteria)
+            : await monitoringApi.getReport<ApiRecord>(config.resource, {
+                startDate: searchCriteria.startDate,
+                endDate: searchCriteria.endDate,
+                reportType: getReportType(config.resource),
+                baseYear: searchCriteria.year,
+                baseMonth: searchCriteria.month
+              });
 
         if (!mounted) {
           return;
         }
 
-        setRows(sortReportRows(nextRows));
+        setRows(sortReportRows(nextRows, searchCriteria.mode));
       } catch (error) {
         if (!mounted) {
           return;
@@ -434,7 +653,7 @@ export function OperationReportPage() {
     return () => {
       mounted = false;
     };
-  }, [config.resource, searchCriteria.endDate, searchCriteria.month, searchCriteria.startDate, searchCriteria.year]);
+  }, [config.resource, searchCriteria.endDate, searchCriteria.mode, searchCriteria.month, searchCriteria.startDate, searchCriteria.year]);
 
   useEffect(() => {
     const enablePrintMode = () => setIsPrintMode(true);
@@ -449,14 +668,38 @@ export function OperationReportPage() {
     };
   }, []);
 
-  const labels = useMemo(() => rows.map((row) => getReportDateLabel(row)), [rows]);
-  const firstBarSeries = useMemo(() => rows.map((row) => toChartNumber(readApiField(row, config.firstBarField.key))), [config.firstBarField, rows]);
-  const secondBarSeries = useMemo(() => rows.map((row) => toChartNumber(readApiField(row, config.secondBarField.key))), [config.secondBarField, rows]);
-  const lineSeries = useMemo(() => rows.map((row) => toChartNumber(readApiField(row, config.lineField.key))), [config.lineField, rows]);
-  const detailRows = useMemo(() => buildDetailTableRows(rows), [rows]);
+  const chartRows = useMemo(() => buildReportChartRows(rows, searchCriteria), [rows, searchCriteria]);
+  const labels = useMemo(
+    () =>
+      searchCriteria.mode === 'Daily'
+        ? reportDailyHourLabels
+        : searchCriteria.mode === 'Weekly'
+          ? getDateKeysInRange(searchCriteria.startDate, searchCriteria.endDate)
+          : rows.map((row) => getReportDisplayLabel(row, searchCriteria.mode)),
+    [rows, searchCriteria.endDate, searchCriteria.mode, searchCriteria.startDate]
+  );
+  const firstBarSeries = useMemo(() => chartRows.map((row) => getReportChartValue(row, config.firstBarField.key)), [chartRows, config.firstBarField]);
+  const secondBarSeries = useMemo(() => chartRows.map((row) => getReportChartValue(row, config.secondBarField.key)), [chartRows, config.secondBarField]);
+  const lineSeries = useMemo(() => chartRows.map((row) => getReportChartValue(row, config.lineField.key)), [chartRows, config.lineField]);
+  const chartAxisScale = useMemo(() => getReportChartAxisScale(firstBarSeries, secondBarSeries), [firstBarSeries, secondBarSeries]);
+  const normalizedLineSeries = useMemo(
+    () => lineSeries.map((value) => ({ value: getReportRatioVisualValue(value, chartAxisScale.max), reportValue: value })),
+    [chartAxisScale.max, lineSeries]
+  );
+  const detailRows = useMemo(() => buildDetailTableRows(rows, searchCriteria.mode), [rows, searchCriteria.mode]);
   const summarySourceRow = useMemo(() => getSummarySourceRow(rows), [rows]);
   const demandSupplyRows = useMemo(() => buildDemandSupplyRows(summarySourceRow), [summarySourceRow]);
   const printTitle = reportPrintTitles[searchCriteria.mode];
+  const isDailyChart = searchCriteria.mode === 'Daily';
+  const shouldScrollDailyChartToCurrentTime = isDailyChart && !isPrintMode && isTodayDate(searchCriteria.startDate);
+  const reportChartLegendItems = useMemo(
+    () => [
+      { name: config.firstBarField.label, type: 'bar' as const, color: reportChartColors[0] },
+      { name: config.secondBarField.label, type: 'bar' as const, color: reportChartColors[1] },
+      { name: config.lineField.label, type: 'line' as const, color: reportChartColors[2] }
+    ],
+    [config.firstBarField.label, config.lineField.label, config.secondBarField.label]
+  );
 
   const handlePrintReport = () => {
     flushSync(() => setIsPrintMode(true));
@@ -465,61 +708,75 @@ export function OperationReportPage() {
 
   const chartOption = useMemo<EChartsOption>(
     () => ({
-      color: ['#2f9cff', '#f7c978', '#f3f6ff'],
-      title: {
-        text: 'Power Generation & Consumption',
-        left: 'center',
-        top: 0,
-        textStyle: { color: '#f3f6ff', fontSize: isPrintMode ? 8 : 14, fontWeight: 800 }
-      },
-      tooltip: { trigger: 'axis' },
+      color: reportChartColors,
+      tooltip: { trigger: 'axis', formatter: formatReportChartTooltip },
       legend: {
-        bottom: 0,
-        itemWidth: isPrintMode ? 10 : 25,
-        itemHeight: isPrintMode ? 6 : 14,
-        textStyle: { color: '#cfd6e8', fontSize: isPrintMode ? 7 : 12 }
+        show: false,
+        selectedMode: true
       },
       grid: {
-        left: isPrintMode ? 4 : 24,
+        left: isPrintMode ? 32 : 64,
         right: isPrintMode ? 4 : 24,
-        top: isPrintMode ? 28 : 64,
-        bottom: isPrintMode ? 26 : 50,
-        containLabel: true
+        top: isPrintMode ? 18 : 36,
+        bottom: isPrintMode ? 26 : 30,
+        containLabel: false
       },
       xAxis: {
         type: 'category',
         data: labels,
-        axisLabel: { color: '#aab3c5', fontSize: isPrintMode ? 6 : 12 },
+        axisLabel: { color: '#aab3c5', fontSize: isPrintMode ? 6 : 12, interval: searchCriteria.mode === 'Daily' ? 0 : 'auto' },
         axisLine: { lineStyle: { color: '#2f3a52' } }
       },
       yAxis: {
         type: 'value',
-        axisLabel: { color: '#cfd6e8', fontSize: isPrintMode ? 6 : 12 },
+        min: 0,
+        max: chartAxisScale.max,
+        interval: chartAxisScale.interval,
+        axisLabel: { color: '#cfd6e8', fontSize: isPrintMode ? 6 : 12, align: 'right', width: isPrintMode ? 24 : 56, margin: isPrintMode ? 4 : 8 },
         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
       },
       series: [
         {
           name: config.firstBarField.label,
           type: 'bar',
-          barWidth: isPrintMode ? 10 : 28,
+          barWidth: isPrintMode ? 10 : isDailyChart ? 30 : 28,
+          barGap: isDailyChart ? '14%' : '18%',
+          barCategoryGap: isDailyChart ? '44%' : '36%',
           data: firstBarSeries
         },
         {
           name: config.secondBarField.label,
           type: 'bar',
-          barWidth: isPrintMode ? 10 : 28,
+          barWidth: isPrintMode ? 10 : isDailyChart ? 30 : 28,
+          barGap: isDailyChart ? '14%' : '18%',
+          barCategoryGap: isDailyChart ? '44%' : '36%',
           data: secondBarSeries
         },
         {
           name: config.lineField.label,
           type: 'line',
           smooth: false,
+          lineStyle: { color: reportChartColors[2], width: 2 },
+          itemStyle: { color: '#ffffff', borderColor: reportChartColors[2], borderWidth: 2 },
           symbolSize: isPrintMode ? 4 : 9,
-          data: lineSeries
+          data: normalizedLineSeries
         }
       ]
     }),
-    [config.firstBarField.label, config.lineField.label, config.secondBarField.label, firstBarSeries, isPrintMode, labels, lineSeries, secondBarSeries]
+    [
+      chartAxisScale.interval,
+      chartAxisScale.max,
+      config.firstBarField.label,
+      config.lineField.label,
+      config.secondBarField.label,
+      firstBarSeries,
+      isDailyChart,
+      isPrintMode,
+      labels,
+      normalizedLineSeries,
+      searchCriteria.mode,
+      secondBarSeries
+    ]
   );
 
   return (
@@ -537,6 +794,8 @@ export function OperationReportPage() {
           defaultEndDate={searchCriteria.endDate}
           defaultYear={searchCriteria.year}
           defaultMonth={searchCriteria.month}
+          dateRangeLimitDays={30}
+          weekNavigationMode="Weekly"
           onSearch={setSearchCriteria}
         />
       </section>
@@ -568,7 +827,18 @@ export function OperationReportPage() {
 
           <div className="report-print-section-label">2. Moving Graph</div>
           <PageCard className="report-chart-card" ariaLabel={`${config.title} 그래프`}>
-            <BaseChart option={chartOption} height={isPrintMode ? 170 : 360} minWidth="100%" maxWidth={isPrintMode ? '100%' : 2560} />
+            <div className="report-chart-title">Power Generation &amp; Consumption</div>
+            <BaseChart
+              option={chartOption}
+              height={isPrintMode ? 170 : 360}
+              minWidth="100%"
+              maxWidth={isPrintMode ? '100%' : 2560}
+              fullDay={isDailyChart && !isPrintMode}
+              scrollToCurrentTime={shouldScrollDailyChartToCurrentTime}
+              categoryCount={!isDailyChart && !isPrintMode ? labels.length : undefined}
+              legendItems={reportChartLegendItems}
+              className="report-chart--with-unit"
+            />
           </PageCard>
 
           <div className="report-print-section-label">3. Detail Data</div>
@@ -578,7 +848,6 @@ export function OperationReportPage() {
             ariaLabel={`${config.title} 상세 데이터`}
             headerRows={reportDetailHeaderRows}
             rows={detailRows}
-            minWidth={1500}
             excel={{ fileName: `${config.title}_${searchCriteria.mode}`, sheetName: 'Detail Data' }}
           />
         </div>

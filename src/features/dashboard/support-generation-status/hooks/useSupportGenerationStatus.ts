@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
+import { useAutoRefresh } from '../../../../shared/hooks/useAutoRefresh';
 import { supportGenerationStatusApi } from '../api/supportGenerationStatusApi';
 import { toSupportGenerationPageData } from '../adapters/supportGenerationStatusAdapter';
 import type { SupportGenerationPageData } from '../types/supportGenerationStatus';
@@ -17,6 +18,7 @@ type SupportGenerationStatusState = {
  * 수정: 조회 조건이 생기면 API 함수 인자와 이 hook의 loadStatus만 확장한다.
  */
 export function useSupportGenerationStatus() {
+  const refreshedAt = useAutoRefresh();
   const [state, setState] = useState<SupportGenerationStatusState>({
     data: null,
     isLoading: true,
@@ -27,7 +29,7 @@ export function useSupportGenerationStatus() {
     let mounted = true;
 
     async function loadStatus() {
-      setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
+      setState((currentState) => ({ ...currentState, isLoading: currentState.data === null, errorMessage: '' }));
 
       try {
         const response = await supportGenerationStatusApi.getStatus();
@@ -53,7 +55,7 @@ export function useSupportGenerationStatus() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshedAt]);
 
   return state;
 }

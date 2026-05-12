@@ -65,95 +65,32 @@ function formatDateKey(dateKey: string) {
   return dateKey.replace(/-/g, '.');
 }
 
-function parseDateKey(dateKey: string | undefined) {
-  const normalizedKey = normalizeDateKey(dateKey);
-  const date = normalizedKey ? new Date(`${normalizedKey}T00:00:00`) : null;
-
-  return date && !Number.isNaN(date.getTime()) ? date : null;
-}
-
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-
-  return nextDate;
-}
-
-function getInclusiveDays(startDate: Date, endDate: Date) {
-  const millisecondsPerDay = 24 * 60 * 60 * 1000;
-
-  return Math.floor((endDate.getTime() - startDate.getTime()) / millisecondsPerDay) + 1;
-}
-
-function buildPeriodChunks(startDate?: string, endDate?: string, maxDays = 30) {
-  const start = parseDateKey(startDate);
-  const end = parseDateKey(endDate);
-
-  if (!start || !end || start > end) {
-    return [];
+function getHistoryPeriodType(mode: string): MonitoringSearchRequest['periodType'] {
+  if (mode === 'Year') {
+    return 'YEAR';
   }
 
-  const chunks: Array<{ startDate: string; endDate: string }> = [];
-  let currentStart = new Date(start);
-
-  while (currentStart <= end) {
-    const currentEnd = addDays(currentStart, maxDays - 1);
-    const chunkEnd = currentEnd < end ? currentEnd : new Date(end);
-    chunks.push({ startDate: toDateKey(currentStart), endDate: toDateKey(chunkEnd) });
-    currentStart = addDays(chunkEnd, 1);
+  if (mode === 'Month') {
+    return 'MONTH';
   }
 
-  const lastChunk = chunks.at(-1);
-  const previousChunk = chunks.at(-2);
-
-  if (chunks.length > 1 && lastChunk && previousChunk) {
-    const lastStart = parseDateKey(lastChunk.startDate);
-    const lastEnd = parseDateKey(lastChunk.endDate);
-    const previousEnd = parseDateKey(previousChunk.endDate);
-
-    if (lastStart && lastEnd && previousEnd && getInclusiveDays(lastStart, lastEnd) === 1) {
-      const movedDate = addDays(previousEnd, -1);
-      previousChunk.endDate = toDateKey(movedDate);
-      lastChunk.startDate = toDateKey(previousEnd);
-    }
-  }
-
-  return chunks;
+  return 'PERIOD';
 }
 
 function buildHistoryQueries(criteria: SearchConditionCriteria<string>): MonitoringSearchRequest[] {
-  const periodChunks = buildPeriodChunks(criteria.startDate, criteria.endDate);
   const isSingleDay = normalizeDateKey(criteria.startDate) === normalizeDateKey(criteria.endDate);
   const outputUnit: MonitoringSearchRequest['outputUnit'] = criteria.mode === 'Year' ? 'MONTH' : isSingleDay ? 'HOUR' : 'DAY';
 
-  if (periodChunks.length === 0) {
-    return [
-      {
-        startDate: criteria.startDate,
-        endDate: criteria.endDate,
-        periodType: 'PERIOD',
-        outputUnit,
-        page: 1,
-        size: 500
-      }
-    ];
-  }
-
-  return periodChunks.map((chunk) => ({
-    ...chunk,
-    periodType: 'PERIOD',
-    outputUnit,
-    page: 1,
-    size: 500
-  }));
+  return [
+    {
+      startDate: criteria.startDate,
+      endDate: criteria.endDate,
+      periodType: getHistoryPeriodType(criteria.mode),
+      outputUnit,
+      page: 1,
+      size: 500
+    }
+  ];
 }
 
 function getDateKeyRange(startDate?: string, endDate?: string) {
@@ -183,6 +120,28 @@ function getDateKeyRange(startDate?: string, endDate?: string) {
   }
 
   return keys;
+}
+
+function getMonthDateKeyRange(month?: string) {
+  const match = String(month ?? '').match(/^(\d{4})-(\d{2})$/);
+
+  if (!match) {
+    return [];
+  }
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+
+  if (!Number.isInteger(year) || !Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+    return [];
+  }
+
+  const today = new Date();
+  const monthEnd = new Date(year, monthIndex + 1, 0);
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === monthIndex;
+  const end = isCurrentMonth ? new Date(year, monthIndex, today.getDate()) : monthEnd;
+
+  return getDateKeyRange(formatDateKey(`${year}-${String(monthIndex + 1).padStart(2, '0')}-01`), formatDateKey(`${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`));
 }
 
 function getLabel(row: ApiRecord, mode: string) {
@@ -272,7 +231,7 @@ function groupRowsByLabel(rows: ApiRecord[], mode: string, fields: HistoryField[
 function buildSeriesByMetric<TMetric extends string>(metrics: readonly TMetric[], rows: ApiRecord[], field: string, dischargeField?: string) {
   return metrics.reduce<Record<TMetric, Array<number | null>>>((seriesByMetric, metric) => {
     const sourceField = getMetricSourceField(metric, field, dischargeField);
-    seriesByMetric[metric] = rows.map((row) => toChartNumber(readApiField(row, getMetricField(sourceField, metric))));
+    seriesByMetric[metric] = rows.map((row) => toNumber(readApiField(row, getMetricField(sourceField, metric))));
     return seriesByMetric;
   }, {} as Record<TMetric, Array<number | null>>);
 }
@@ -339,6 +298,35 @@ function buildHourlyChartRows(rows: ApiRecord[], mode: string, fallbackStartDate
   );
 }
 
+function buildDailySlotChartRows(rows: ApiRecord[], criteria: SearchConditionCriteria<string>) {
+  if (isHourlyChartMode(criteria.mode, criteria.startDate, criteria.endDate) || criteria.mode === 'Year') {
+    return rows;
+  }
+
+  const dateKeys = criteria.mode === 'Month' ? getMonthDateKeyRange(criteria.month) : getDateKeyRange(criteria.startDate, criteria.endDate);
+
+  if (dateKeys.length === 0) {
+    return rows;
+  }
+
+  const rowsByDate = new Map<string, ApiRecord>();
+
+  rows.forEach((row) => {
+    const dateKey = normalizeDateKey(String(row.label ?? '')) || normalizeDateKey(getDateLabel(row));
+
+    if (dateKey && !rowsByDate.has(dateKey)) {
+      rowsByDate.set(dateKey, row);
+    }
+  });
+
+  return dateKeys.map((dateKey) => {
+    const row = rowsByDate.get(dateKey);
+    const label = formatDateKey(dateKey);
+
+    return row ? { ...row, label } : { label, esmtOperYmd: dateKey };
+  });
+}
+
 function buildHourlySeriesByMetric<TMetric extends string>(metrics: readonly TMetric[], rows: ApiRecord[], field: string, dischargeField?: string) {
   return metrics.reduce<Record<TMetric, Array<number | null>>>((seriesByMetric, metric) => {
     const sourceField = getMetricSourceField(metric, field, dischargeField);
@@ -358,7 +346,8 @@ function buildHistoryViewData<TMetric extends string, TMode extends string>(
     ...config.fields
   ];
   const groupedRows = groupRowsByLabel(sortedRows, config.searchCriteria.mode, valueFields);
-  const chartRows = buildHourlyChartRows(groupedRows, config.searchCriteria.mode, config.searchCriteria.startDate, config.searchCriteria.endDate);
+  const hourlyChartRows = buildHourlyChartRows(groupedRows, config.searchCriteria.mode, config.searchCriteria.startDate, config.searchCriteria.endDate);
+  const chartRows = buildDailySlotChartRows(hourlyChartRows, config.searchCriteria);
   const labels = chartRows.map((row) => String(row.label ?? EMPTY_API_VALUE));
   const headerRows: TableHeaderCell[][] = [[{ label: 'DATE' }, ...config.fields.map((field) => ({ label: field.label }))]];
   const tableRows = groupedRows.map((row) => [

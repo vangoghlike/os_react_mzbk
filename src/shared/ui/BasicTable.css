@@ -39,6 +39,13 @@
   table-layout: auto;
 }
 
+@media (min-width: 721px) {
+  .table--balanced {
+    width: 100%;
+    table-layout: fixed;
+  }
+}
+
 .table thead th {
   vertical-align: middle;
   min-height: 56px;
@@ -102,6 +109,7 @@
   font-weight: 300;
   white-space: nowrap;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .table tbody tr:first-child td {

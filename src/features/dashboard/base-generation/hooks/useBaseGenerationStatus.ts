@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
 import type { MonitoringDomain } from '../../../../shared/api/monitoringApi';
+import { useAutoRefresh } from '../../../../shared/hooks/useAutoRefresh';
 import { toBaseGenerationPageData } from '../adapters/baseGenerationAdapter';
 import { baseGenerationApi } from '../api/baseGenerationApi';
 import type { BaseGenerationPageData } from '../types/baseGeneration';
@@ -18,6 +19,7 @@ type BaseGenerationStatusState = {
  * 수정: 자동 갱신이나 검색 조건이 들어오면 이 hook의 domain, targetId, 조회 인자만 확장한다.
  */
 export function useBaseGenerationStatus(domain: MonitoringDomain = 'base-total', targetId = '') {
+  const refreshedAt = useAutoRefresh();
   const [state, setState] = useState<BaseGenerationStatusState>({
     data: null,
     isLoading: true,
@@ -28,7 +30,7 @@ export function useBaseGenerationStatus(domain: MonitoringDomain = 'base-total',
     let mounted = true;
 
     async function loadStatus() {
-      setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
+      setState((currentState) => ({ ...currentState, isLoading: currentState.data === null, errorMessage: '' }));
 
       try {
         const response = await baseGenerationApi.getStatus(domain, targetId);
@@ -54,7 +56,7 @@ export function useBaseGenerationStatus(domain: MonitoringDomain = 'base-total',
     return () => {
       mounted = false;
     };
-  }, [domain, targetId]);
+  }, [domain, refreshedAt, targetId]);
 
   return state;
 }

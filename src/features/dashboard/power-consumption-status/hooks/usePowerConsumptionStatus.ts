@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
+import { useAutoRefresh } from '../../../../shared/hooks/useAutoRefresh';
 import { powerConsumptionStatusApi } from '../api/powerConsumptionStatusApi';
 import { toPowerConsumptionPageData } from '../adapters/powerConsumptionStatusAdapter';
 import type { PowerConsumptionPageData } from '../types/powerConsumptionStatus';
@@ -17,6 +18,7 @@ type PowerConsumptionStatusState = {
  * 수정: 전용 검색 조건이 생기면 API 함수와 이 hook의 loadStatus 인자를 확장한다.
  */
 export function usePowerConsumptionStatus() {
+  const refreshedAt = useAutoRefresh();
   const [state, setState] = useState<PowerConsumptionStatusState>({
     data: null,
     isLoading: true,
@@ -27,7 +29,7 @@ export function usePowerConsumptionStatus() {
     let mounted = true;
 
     async function loadStatus() {
-      setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
+      setState((currentState) => ({ ...currentState, isLoading: currentState.data === null, errorMessage: '' }));
 
       try {
         const response = await powerConsumptionStatusApi.getStatus();
@@ -53,7 +55,7 @@ export function usePowerConsumptionStatus() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshedAt]);
 
   return state;
 }

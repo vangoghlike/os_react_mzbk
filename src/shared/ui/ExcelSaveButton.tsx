@@ -1,5 +1,7 @@
 import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 import { useState } from 'react';
+import type { AuthSession } from '../../features/auth/session/types/authSession';
+import { useAuthSession } from '../../features/auth/session/AuthSessionProvider';
 import { commonIconSources } from '../assets/icons/commonIconSources';
 import type { ExcelExportSheet } from '../utils/excelExport';
 import { downloadExcelWorkbook } from '../utils/excelExport';
@@ -14,6 +16,18 @@ type ExcelSaveButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'child
   fileName?: string;
   sheets?: ExcelExportSheet[];
 };
+
+function formatExcelDownloadTimestamp(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, '0');
+
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(
+    date.getSeconds()
+  )}`;
+}
+
+function getExcelDownloadAccountName(session: AuthSession | null) {
+  return session?.user.name.trim() || session?.user.id.trim() || 'unknown';
+}
 
 /*
  * 필요: 여러 상세 표에 반복되는 전체엑셀 저장 버튼 모양을 통일한다.
@@ -31,6 +45,7 @@ export function ExcelSaveButton({
   onClick,
   ...props
 }: ExcelSaveButtonProps) {
+  const { session } = useAuthSession();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
@@ -42,7 +57,9 @@ export function ExcelSaveButton({
 
   const handleConfirm = () => {
     if (!sheets?.length) return;
-    downloadExcelWorkbook({ fileName, sheets });
+    const timestamp = formatExcelDownloadTimestamp(new Date());
+    const accountName = getExcelDownloadAccountName(session);
+    downloadExcelWorkbook({ fileName: `${fileName}_다운로드_${timestamp}_${accountName}`, sheets });
     setIsConfirmOpen(false);
   };
 

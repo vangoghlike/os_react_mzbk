@@ -16,7 +16,9 @@ type HeaderCellRenderInfo = TableHeaderCell & {
   edgeClassName: string;
 };
 
-// 병합 헤더는 실제 바깥 셀만 라운드/외곽선 제거가 필요해서 colSpan, rowSpan 기준으로 위치를 계산한다.
+const BALANCED_TABLE_MAX_COLUMNS = 10;
+
+// 복합 헤더는 실제 바닥 컬럼 수를 기준으로 모서리와 마지막 경계 클래스를 계산한다.
 function getHeaderRenderRows(headerRows?: TableHeaderCell[][], headers?: string[]): HeaderCellRenderInfo[][] {
   const rows: TableHeaderCell[][] = headerRows ?? [headers?.map((label): TableHeaderCell => ({ label })) ?? []];
   const rowCount = rows.length;
@@ -70,20 +72,39 @@ function getHeaderRenderRows(headerRows?: TableHeaderCell[][], headers?: string[
   );
 }
 
+function getHeaderColumnCount(headerRows?: TableHeaderCell[][], headers?: string[]) {
+  if (headerRows?.length) {
+    return Math.max(...headerRows.map((row) => row.reduce((sum, cell) => sum + (cell.colSpan ?? 1), 0)), 0);
+  }
+
+  return headers?.length ?? 0;
+}
+
+function getTableColumnCount(headerRows: TableHeaderCell[][] | undefined, headers: string[] | undefined, rows: TableRow[]) {
+  const headerColumnCount = getHeaderColumnCount(headerRows, headers);
+  const bodyColumnCount = Math.max(...rows.map((row) => row.length), 0);
+
+  return Math.max(headerColumnCount, bodyColumnCount);
+}
+
 /*
  * 필요: 여러 화면의 일반 표와 다중 헤더 표를 같은 구조로 렌더링한다.
  * 연결: shared/types/table, feature별 API table view model.
- * 설명: headerRows가 있으면 병합 헤더를 쓰고, 없으면 단일 headers 배열을 쓴다.
- * 수정: 표 최소 폭은 호출부 minWidth로 조정하고 시각 스타일은 BasicTable.css에서 조정한다.
+ * 설명: headerRows가 있으면 복합 헤더를 그리고, 없으면 단일 headers 배열을 쓴다.
+ * 수정: 10컬럼 이하 표는 PC 기준 균등 너비 클래스를 붙이고, 넓은 표는 기존 스크롤 흐름을 유지한다.
  */
 export function BasicTable({ headers, headerRows, rows, ariaLabel, minWidth, className = '' }: BasicTableProps) {
   // 넓은 설비 표는 화면별 minWidth만 넘기고 공통 래퍼에서 가로 스크롤을 맡는다.
   const tableMinWidth = typeof minWidth === 'number' ? `${minWidth}px` : minWidth;
   const resolvedHeaderRows = getHeaderRenderRows(headerRows, headers);
+  const columnCount = getTableColumnCount(headerRows, headers, rows);
+  const tableClassName = ['table', columnCount > 0 && columnCount <= BALANCED_TABLE_MAX_COLUMNS ? 'table--balanced' : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={`table-wrap ${className}`.trim()}>
-      <table className="table" aria-label={ariaLabel} style={{ minWidth: tableMinWidth }}>
+      <table className={tableClassName} aria-label={ariaLabel} style={{ minWidth: tableMinWidth }}>
         <thead>
           {resolvedHeaderRows.map((headerRow, rowIndex) => (
             <tr key={`header-row-${rowIndex}`}>

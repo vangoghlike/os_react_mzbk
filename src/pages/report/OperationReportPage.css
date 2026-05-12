@@ -1,5 +1,5 @@
 .operation-report-page .card__title {
-  font-size: 1.125rem;
+  font-size: 1.5rem;
 }
 
 .report-print-title,
@@ -25,7 +25,7 @@
 
 .report-summary-card .card__header {
   align-items: flex-start;
-  padding: 37px 37px 0;
+  padding: var(--mzbk-common-content-gap) var(--mzbk-common-content-gap) 0;
 }
 
 .report-summary-card__print {
@@ -37,12 +37,12 @@
 
 .report-summary-card .card__body,
 .report-chart-card .card__body {
-  padding: 37px;
+  padding: var(--mzbk-common-content-gap);
 }
 
 .report-summary-card .card__body {
-  padding-right: 37px;
-  padding-left: 37px;
+  padding-right: var(--mzbk-common-content-gap);
+  padding-left: var(--mzbk-common-content-gap);
 }
 
 .report-summary-card__tables {
@@ -55,6 +55,9 @@
   width: 100%;
   min-width: 780px;
   color: #dce4f5;
+  border-radius: 18px;
+  border: 1px solid var(--table-line);
+  overflow: hidden;
 }
 
 .report-summary-value-table__row {
@@ -63,10 +66,12 @@
   min-height: 54px;
   border-bottom: 1px solid var(--table-line);
 }
+.report-summary-value-table__row:last-child {
+  border-bottom: none;
+}
 
 .report-summary-value-table__row--date {
   grid-template-columns: 380px 1fr;
-  border-top: 1px solid var(--table-line);
 }
 
 .report-summary-value-table__header,
@@ -120,14 +125,64 @@
 
 .report-chart-card .card__body {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: center;
-  padding-right: 37px;
-  padding-left: 37px;
+  padding-right: var(--mzbk-common-content-gap);
+  padding-left: var(--mzbk-common-content-gap);
+}
+
+.report-chart-title {
+  margin: 0 0 18px;
+  color: #f3f6ff;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
 }
 
 .report-chart-card .chart {
+  position: relative;
   width: 100%;
   max-width: 2560px;
+}
+
+.report-chart--with-unit::before {
+  content: "kWh";
+  position: absolute;
+  top: 14px;
+  left: 0;
+  z-index: 2;
+  width: 64px;
+  color: #cfd6e8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: right;
+  pointer-events: none;
+}
+
+@media print {
+  .report-chart--with-unit::before {
+    top: 6px;
+    width: 32px;
+    font-size: 0.375rem;
+  }
+}
+
+.report-detail-card .table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.report-detail-card .table thead th {
+  padding-right: 6px;
+  padding-left: 6px;
+}
+
+.report-detail-card .table tbody td {
+  /* padding-right: 37px;
+  padding-left: 37px; */
 }
 
 .report-message {

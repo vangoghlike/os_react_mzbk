@@ -386,7 +386,7 @@ function createCommonRecord(row: MonitoringChartDto | MonitoringTableDto | Monit
     maxDispatchPower: firstValue(apparentValue, reactiveValue),
     minDispatchPower: firstValue(apparentValue, reactiveValue),
     avgDispatchPower: firstValue(apparentValue, reactiveValue),
-    avgSoc: firstValue(chartRow.lineValue2, tableRow.soc, ratioValue),
+    avgSoc: firstValue(chartRow.lineValue1, tableRow.soc, ratioValue),
     remark: firstValue((row as MonitoringLatestDto).remark, latest?.remark)
   };
 }

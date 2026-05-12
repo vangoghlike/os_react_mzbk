@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 import type { EChartsOption } from 'echarts';
 import { EMPTY_API_VALUE } from '../api/apiDataUtils';
 import {
-  FULL_DAY_TIME_CHART_MAX_WIDTH,
-  FULL_DAY_TIME_CHART_MIN_WIDTH,
   FULL_DAY_TIME_LABELS,
   normalizeHourLabel
 } from '../utils/hourlyChartSlots';
@@ -278,9 +276,8 @@ export function ChartSummaryPanel({
         <BaseChart
           option={chartOption}
           height={chartHeight}
-          minWidth={fullDayChart.isHourly ? FULL_DAY_TIME_CHART_MIN_WIDTH : chartMinWidth}
-          maxWidth={fullDayChart.isHourly ? FULL_DAY_TIME_CHART_MAX_WIDTH : undefined}
-          scrollable
+          minWidth={chartMinWidth}
+          fullDay={fullDayChart.isHourly}
           scrollToCurrentTime={fullDayChart.isHourly}
           legendItems={chartLegendItems}
         />

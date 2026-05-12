@@ -7,8 +7,6 @@ import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFa
 import { PageHeading } from '../../../../shared/ui/PageHeading';
 import { EMPTY_API_VALUE } from '../../../../shared/api/apiDataUtils';
 import {
-  FULL_DAY_TIME_CHART_MAX_WIDTH,
-  FULL_DAY_TIME_CHART_MIN_WIDTH,
   FULL_DAY_TIME_LABELS,
   normalizeHourLabel
 } from '../../../../shared/utils/hourlyChartSlots';
@@ -107,9 +105,7 @@ export function AcStatusPage() {
             <BaseChart
               option={chartOption}
               height={420}
-              minWidth={FULL_DAY_TIME_CHART_MIN_WIDTH}
-              maxWidth={FULL_DAY_TIME_CHART_MAX_WIDTH}
-              scrollable
+              fullDay
               scrollToCurrentTime
               legendItems={[
                 { name: '급기 온도', type: 'line', color: '#25b6fe' },

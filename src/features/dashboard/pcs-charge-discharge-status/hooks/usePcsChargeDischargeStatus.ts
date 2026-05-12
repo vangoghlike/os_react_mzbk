@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
+import { useAutoRefresh } from '../../../../shared/hooks/useAutoRefresh';
 import { pcsChargeDischargeStatusApi } from '../api/pcsChargeDischargeStatusApi';
 import { toPcsChargeDischargePageData } from '../adapters/pcsChargeDischargeStatusAdapter';
 import type { PcsChargeDischargePageData } from '../types/pcsChargeDischargeStatus';
@@ -17,6 +18,7 @@ type PcsChargeDischargeStatusState = {
  * 수정: 장비 선택 조건이 추가되면 이 hook의 조회 인자만 확장한다.
  */
 export function usePcsChargeDischargeStatus() {
+  const refreshedAt = useAutoRefresh();
   const [state, setState] = useState<PcsChargeDischargeStatusState>({
     data: null,
     isLoading: true,
@@ -27,7 +29,7 @@ export function usePcsChargeDischargeStatus() {
     let mounted = true;
 
     async function loadStatus() {
-      setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
+      setState((currentState) => ({ ...currentState, isLoading: currentState.data === null, errorMessage: '' }));
 
       try {
         const response = await pcsChargeDischargeStatusApi.getStatus();
@@ -53,7 +55,7 @@ export function usePcsChargeDischargeStatus() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshedAt]);
 
   return state;
 }

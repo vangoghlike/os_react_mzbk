@@ -1,9 +1,8 @@
 .power-consumption-history-result .card__body {
   display: flex;
   flex-direction: column;
-  gap: 37px;
-  min-height: 650px;
-  padding: 37px;
+  gap: var(--mzbk-common-content-gap);
+  padding: var(--mzbk-common-content-gap);
 }
 
 @media (max-width: 720px) {

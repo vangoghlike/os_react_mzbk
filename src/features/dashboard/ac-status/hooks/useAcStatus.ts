@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../../../shared/api/apiClient';
+import { useAutoRefresh } from '../../../../shared/hooks/useAutoRefresh';
 import { acStatusApi } from '../api/acStatusApi';
 import { toAcStatusPageData } from '../adapters/acStatusAdapter';
 import type { AcStatusPageData } from '../types/acStatus';
@@ -17,6 +18,7 @@ type AcStatusState = {
  * 수정: 자동 갱신이 필요하면 이 hook에서 polling 기준만 추가한다.
  */
 export function useAcStatus() {
+  const refreshedAt = useAutoRefresh();
   const [state, setState] = useState<AcStatusState>({
     data: null,
     isLoading: true,
@@ -27,7 +29,7 @@ export function useAcStatus() {
     let mounted = true;
 
     async function loadStatus() {
-      setState((currentState) => ({ ...currentState, isLoading: true, errorMessage: '' }));
+      setState((currentState) => ({ ...currentState, isLoading: currentState.data === null, errorMessage: '' }));
 
       try {
         const response = await acStatusApi.getStatus();
@@ -49,7 +51,7 @@ export function useAcStatus() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshedAt]);
 
   return state;
 }

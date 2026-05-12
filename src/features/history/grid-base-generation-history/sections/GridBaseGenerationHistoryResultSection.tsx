@@ -6,7 +6,7 @@ import type { SearchConditionCriteria } from '../../../../shared/ui/SearchCondit
 import { MetricTabs } from '../../../../shared/ui/MetricTabs';
 import { PageCard } from '../../../../shared/ui/PageCard';
 import { PageDataLoadingFallback } from '../../../../shared/ui/PageDataLoadingFallback';
-import { getHourlyChartMaxWidth, getHourlyChartMinWidth } from '../../../../shared/utils/hourlyChartSlots';
+import { isSingleDayRange, isTodayDate } from '../../../../shared/utils/hourlyChartSlots';
 import { gridBaseGenerationHistoryMetrics } from '../constants/gridBaseGenerationHistoryConfig';
 import { useMonitoringHistoryViewData } from '../../shared/monitoringHistoryViewData';
 import type { GridBaseGenerationHistoryMetric, GridBaseGenerationHistoryMode } from '../types/gridBaseGenerationHistory';
@@ -25,7 +25,8 @@ type GridBaseGenerationHistoryResultSectionProps = {
  */
 export function GridBaseGenerationHistoryResultSection({ searchCriteria, searchedAt }: GridBaseGenerationHistoryResultSectionProps) {
   const [metric, setMetric] = useState<GridBaseGenerationHistoryMetric>('Max kWh');
-  const isHourlyChart = searchCriteria.mode !== 'Year' && searchCriteria.mode !== 'Month';
+  const isHourlyChart = isSingleDayRange(searchCriteria.startDate, searchCriteria.endDate);
+  const shouldScrollToCurrentTime = isHourlyChart && isTodayDate(searchCriteria.startDate);
   const historyConfig = useMemo(
     () => ({
       resource: 'grid' as const,
@@ -87,10 +88,10 @@ export function GridBaseGenerationHistoryResultSection({ searchCriteria, searche
           <BaseChart
             option={chartOption}
             height={420}
-            minWidth={isHourlyChart ? getHourlyChartMinWidth(data.labels.length) : 1120}
-            maxWidth={isHourlyChart ? getHourlyChartMaxWidth(data.labels.length) : undefined}
-            scrollable
-            scrollToCurrentTime={isHourlyChart && data.labels.length <= 24}
+            minWidth={1120}
+            fullDay={isHourlyChart}
+            scrollToCurrentTime={shouldScrollToCurrentTime}
+            categoryCount={!isHourlyChart ? data.labels.length : undefined}
             yAxisLabel="Total kWh"
             legendItems={[
               { name: '유효전력', type: 'bar', color: '#2f9cff' },
